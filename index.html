@@ -124,7 +124,12 @@
 
       useEffect(() => {
         const savedUser = localStorage.getItem('agrifi_user');
-        if (savedUser) { setData(prev => ({ ...prev, currentUser: savedUser })); setIsAuthenticated(true); fetchData(); }
+        if (savedUser) { 
+          setData(prev => ({ ...prev, currentUser: savedUser })); 
+          setIsAuthenticated(true); 
+        }
+        // Wajib menarik data dari Spreadsheet agar sistem tahu daftar User & PIN
+        fetchData();
       }, []);
 
       const handleLogin = (e) => {
