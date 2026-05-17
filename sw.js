@@ -1,13 +1,8 @@
 const CACHE_NAME = 'agrifi-pwa-cache-v1';
 const urlsToCache = [
+  './',
   './index.html',
-  './manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
