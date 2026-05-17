@@ -1,20 +1,21 @@
 {
-  "name": "Agrifi",
   "short_name": "Agrifi",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#2ecc71",
+  "name": "Agrifi Smart Farm Management",
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "https://cdn-icons-png.flaticon.com/512/2763/2763444.png",
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "https://cdn-icons-png.flaticon.com/512/2763/2763444.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "background_color": "#F7F8FA",
+  "theme_color": "#4A7B2A",
+  "display": "standalone",
+  "orientation": "portrait"
 }
