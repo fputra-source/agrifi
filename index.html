@@ -1,24 +1,19 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#4A7B2A">
   <title>Agrifi - Smart Farm Management</title>
   
-  <link rel="manifest" href="./manifest.json">
+  <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2763/2763444.png">
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
-  <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
@@ -27,7 +22,6 @@
     .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
     .animate-fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     #splash-screen { position: fixed; inset: 0; background: #F7F8FA; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s ease; }
@@ -36,37 +30,24 @@
   </style>
 
   <script>
-    // Registrasi PWA Service Worker otomatis
+    // Aktivasi PWA
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('PWA Service Worker Aktif!', reg))
-          .catch(err => console.error('PWA Service Worker Gagal:', err));
-      });
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
     }
   </script>
 </head>
 <body class="bg-[#F7F8FA] overflow-hidden">
-  
-  <div id="splash-screen">
-     <div class="spinner"></div>
-     <p style="margin-top:20px; font-weight:800; color:#94A3B8; letter-spacing:2px; font-size:12px;">AGRIFI WORKSPACE</p>
-  </div>
-
+  <div id="splash-screen"><div class="spinner"></div><p style="margin-top:20px; font-weight:800; color:#94A3B8; letter-spacing:2px; font-size:12px;">AGRIFI WORKSPACE</p></div>
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
-    
-    const Icon = ({ name, size = 16, className = '' }) => (
-      <i className={`fa-solid fa-${name} ${className}`} style={{ fontSize: size }}></i>
-    );
+    const Icon = ({ name, size = 16, className = '' }) => <i className={`fa-solid fa-${name} ${className}`} style={{ fontSize: size }}></i>;
 
     const App = () => {
-      // !!! MASUKKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI !!!
+      // ⚠️ MASUKKAN URL API (DO-POST) GAS ANDA DI BAWAH INI:
       const API_URL = "https://script.google.com/macros/s/AKfycbzXuy_Y5rqBnfJPPjpkzfOoKMF-nSmmXi1JbH6ti80iLRHYlKqswg33GS5lbsrShTlQrQ/exec";
 
-      // --- APP STATES ---
       const [view, setView] = useState('dashboard');
       const [settingsTab, setSettingsTab] = useState('gh');
       const [cycleTab, setCycleTab] = useState('rab');
@@ -79,27 +60,20 @@
       const [filterMonth, setFilterMonth] = useState(monthNamesList[todayDate.getMonth()]);
       const [filterYear, setFilterYear] = useState(todayDate.getFullYear().toString());
       
-      // --- DATA STATES ---
       const [data, setData] = useState({ 
         transactions: [], inventoryList: [], assetList: [],
         summary: { income: 0, expense: 0, balance: 0, accounts: {} },
-        currentUser: '',
-        accountList: ['Kas Kebun Tunai'],
-        ghList: [],
-        usersList: [],
-        categories: { income: [], expense: [] }
+        currentUser: '', accountList: [], ghList: [], usersList: [], categories: { income: [], expense: [] }
       });
 
-      // --- MODALS STATES ---
       const [isModalOpen, setIsModalOpen] = useState(false);
       const [isMutasiModalOpen, setIsMutasiModalOpen] = useState(false);
       const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
       const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false); 
       const [isTaxModalOpen, setIsTaxModalOpen] = useState(false); 
-      
-      const [assetModal, setAssetModal] = useState({ isOpen: false, mode: 'add', data: { id: '', name: '', price: '', life: 12, gh: 'Pusat', startDate: new Date().toISOString().split('T')[0] } });
       const [isDepreciationModalOpen, setIsDepreciationModalOpen] = useState(false);
-      const [depreciationForm, setDepreciationForm] = useState({ akun: 'BCA Perusahaan', tanggal: new Date().toISOString().split('T')[0] });
+      const [assetModal, setAssetModal] = useState({ isOpen: false, mode: 'add', data: { id: '', name: '', price: '', life: 12, gh: 'Pusat', startDate: new Date().toISOString().split('T')[0] } });
+      const [depreciationForm, setDepreciationForm] = useState({ akun: '', tanggal: new Date().toISOString().split('T')[0] });
       const [invModal, setInvModal] = useState({ isOpen: false, mode: 'add', data: { id: '', name: '', category: 'Pupuk/Nutrisi', qty: '', unit: 'Liter', gh: 'Pusat' } });
       const [useInvModal, setUseInvModal] = useState({ isOpen: false, id: '', name: '', currentQty: 0, unit: '', usedQty: '' });
       const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -109,47 +83,37 @@
       const [payoutForm, setPayoutForm] = useState({ akun: '', tanggal: new Date().toISOString().split('T')[0] });
       const [taxForm, setTaxForm] = useState({ rate: 0.5, base: 'omzet', akun: '', tanggal: new Date().toISOString().split('T')[0] });
       const [retainedFunds, setRetainedFunds] = useState({}); 
+      const [formData, setFormData] = useState({ id: null, tanggal: new Date().toISOString().split('T')[0], kategori: '', deskripsi: '', tipe: 'Expense', jumlah: '', akun: '', greenhouse: '', statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '' }] });
+      const [mutasiData, setMutasiData] = useState({ dariAkun: '', keAkun: '', jumlah: '', deskripsi: '' });
       const [ghModal, setGhModal] = useState({ isOpen: false, mode: 'add', data: { id: '', name: '', investor: '', porsiPengelola: 30, porsiInvestor: 70 } });
       const [accModal, setAccModal] = useState({ isOpen: false, mode: 'add', oldName: '', newName: '' });
       const [catModal, setCatModal] = useState({ isOpen: false, mode: 'add', type: 'expense', oldName: '', newName: '' });
       const [userModal, setUserModal] = useState({ isOpen: false, mode: 'add', data: { name: '', email: '', role: 'Pencatat', access: 'Semua Akses', pin: '' } });
 
-      const [formData, setFormData] = useState({
-        id: null, tanggal: new Date().toISOString().split('T')[0], kategori: '', deskripsi: '', tipe: 'Expense', jumlah: '',
-        akun: '', greenhouse: '', statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '' }]
-      });
-      const [mutasiData, setMutasiData] = useState({ dariAkun: '', keAkun: '', jumlah: '', deskripsi: '' });
+      // UTILITY BIKIN FORMAT RP JADI NORMAL KEMBALI
+      const formatCurrency = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
 
-      // Jembatan REST API fetch standard (Anti Blank Hit)
       const apiCall = async (action, payloadData = null) => {
-        if (!API_URL || API_URL === "MASUKKAN_URL_WEB_APP_GAS_DI_SINI") {
-          alert("Konfigurasi API_URL belum diatur di file index.html GitHub Anda.");
-          return { success: false };
-        }
         try {
-          const response = await fetch(API_URL, {
-            method: 'POST',
-            mode: 'cors',
-            body: JSON.stringify({ action: action, data: payloadData })
-          });
+          const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payloadData }) });
           return await response.json();
-        } catch (e) {
-          console.error("REST API Connection Error:", e);
-          return { success: false, message: e.toString() };
-        }
+        } catch (e) { return { success: false, message: e.toString() }; }
       };
 
       const fetchData = async () => {
-        if (!API_URL || API_URL === "MASUKKAN_URL_WEB_APP_GAS_DI_SINI") return;
+        if (!API_URL.includes('script.google.com')) return;
         setLoading(true);
         try {
           const response = await fetch(API_URL);
           const res = await response.json();
           setData(prev => ({ ...prev, ...res }));
-          setupDefaults(res);
-        } catch (error) {
-          console.error("Gagal menarik data dari API:", error);
-        }
+          if (res.categories && res.accountList && res.ghList) {
+             setFormData(prev => ({ ...prev, kategori: (res.categories.expense || [])[0] || '', akun: (res.accountList || [])[0] || '', greenhouse: (res.ghList || [])[0]?.id || '' }));
+             setMutasiData(prev => ({ ...prev, dariAkun: (res.accountList || [])[0] || '', keAkun: (res.accountList || [])[1] || (res.accountList || [])[0] || '' }));
+             setInvModal(prev => ({ ...prev, data: { ...prev.data, gh: (res.ghList || [])[0]?.id || 'Pusat' } }));
+          }
+          if (res.budgetPlans) setBudgetPlans(res.budgetPlans);
+        } catch (error) { console.error("API Error", error); }
         setLoading(false);
       };
 
@@ -160,281 +124,76 @@
 
       useEffect(() => {
         const savedUser = localStorage.getItem('agrifi_user');
-        if (savedUser) {
-          setData(prev => ({ ...prev, currentUser: savedUser }));
-          setIsAuthenticated(true);
-        }
+        if (savedUser) { setData(prev => ({ ...prev, currentUser: savedUser })); setIsAuthenticated(true); fetchData(); }
       }, []);
 
-      useEffect(() => {
-        if (isAuthenticated) { fetchData(); }
-      }, [isAuthenticated]);
-
-      const setupDefaults = (res) => {
-         if (res.categories && res.accountList && res.ghList) {
-           setFormData(prev => ({
-              ...prev,
-              kategori: (res.categories.expense || [])[0] || '',
-              akun: (res.accountList || [])[0] || '',
-              greenhouse: (res.ghList || [])[0]?.id || ''
-           }));
-           setMutasiData(prev => ({
-              ...prev,
-              dariAkun: (res.accountList || [])[0] || '',
-              keAkun: (res.accountList || [])[1] || (res.accountList || [])[0] || ''
-           }));
-           setInvModal(prev => ({ ...prev, data: { ...prev.data, gh: (res.ghList || [])[0]?.id || 'Pusat' } }));
-         }
-         if (res.budgetPlans) setBudgetPlans(res.budgetPlans);
-      };
-
-      const totalDepreciation = useMemo(() => {
-         return (data.assetList || []).reduce((sum, asset) => sum + ((parseFloat(asset.price) || 0) / (parseInt(asset.life) || 1)), 0);
-      }, [data.assetList]);
-
       const handleLogin = (e) => {
-        e.preventDefault();
-        setLoading(true);
+        e.preventDefault(); setLoading(true);
         const user = (data.usersList || []).find(u => u.email.toLowerCase() === loginForm.email.toLowerCase());
         if (user && (loginForm.password === '1234' || loginForm.password === '5678' || loginForm.password === user.pin)) {
-          setData(prev => ({ ...prev, currentUser: user.email }));
-          setIsAuthenticated(true);
-          setLoginError('');
-          localStorage.setItem('agrifi_user', user.email);
-        } else {
-          setLoginError('Identitas email atau PIN Anda salah!');
-        }
+          setData(prev => ({ ...prev, currentUser: user.email })); setIsAuthenticated(true); setLoginError(''); localStorage.setItem('agrifi_user', user.email); fetchData();
+        } else { setLoginError('Email atau PIN salah!'); }
         setLoading(false);
       };
-
-      const handleLogout = () => {
-        if (window.confirm('Yakin ingin keluar dari sistem?')) {
-          localStorage.removeItem('agrifi_user');
-          setIsAuthenticated(false);
-          setView('dashboard');
-        }
-      };
+      
+      const handleLogout = () => { if (window.confirm('Keluar sistem?')) { localStorage.removeItem('agrifi_user'); setIsAuthenticated(false); setView('dashboard'); } };
 
       const handleSubmitTransaction = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+        e.preventDefault(); setLoading(true);
         if (!formData.id && formData.updateInventory) {
           const validCart = formData.cart.filter(item => item.invId && item.invQty);
           if (validCart.length === 0) { alert('Pilih minimal satu barang.'); setLoading(false); return; }
           formData.cart = validCart; 
         }
-        const res = await apiCall('saveTransaction', formData);
-        if (res.success !== false) { setIsModalOpen(false); fetchData(); }
-        else { alert('Gagal menyimpan.'); setLoading(false); }
+        await apiCall('saveTransaction', formData);
+        setIsModalOpen(false); fetchData();
       };
 
-      const handleDeleteTransaction = async (id) => {
-        if (!window.confirm('Hapus transaksi ini?')) return;
-        setLoading(true);
-        const res = await apiCall('deleteTransaction', id);
-        fetchData();
+      const handleEditTransaction = (t) => {
+         if(t.tipe === 'System') { alert('Penanda siklus tidak bisa diedit.'); return; }
+         setFormData({ id: t.id, tanggal: t.tanggalRaw || new Date().toISOString().split('T')[0], kategori: t.kategori, deskripsi: t.deskripsi, tipe: t.tipe, jumlah: t.jumlah, akun: t.akun, greenhouse: t.greenhouse, statusPembayaran: t.status || 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '' }] });
+         setIsModalOpen(true);
       };
+
+      const handleDeleteTransaction = async (id) => { if (!window.confirm('Hapus transaksi ini?')) return; setLoading(true); await apiCall('deleteTransaction', id); fetchData(); };
 
       const handleResetCycle = async () => {
-        if(selectedFilter === 'Semua' || selectedFilter.startsWith('INV_')) { alert('Pilih 1 GH spesifik di Filter atas.'); return; }
-        if(!window.confirm(`Mulai siklus baru untuk ${selectedFilter}? Progres RAB kembali ke Rp 0.`)) return;
+        if(selectedFilter === 'Semua' || selectedFilter.startsWith('INV_')) { alert('Pilih 1 GH spesifik.'); return; }
+        if(!window.confirm(`Mulai siklus baru untuk ${selectedFilter}? Realisasi RAB kembali ke Rp 0.`)) return;
         setLoading(true);
-        const txData = { id: null, tanggal: new Date().toISOString().split('T')[0], kategori: 'Reset Siklus Tanam', deskripsi: `Sistem: Memulai siklus baru`, tipe: 'System', jumlah: 0, akun: allowedAccounts[0] || 'Kas Kebun Tunai', greenhouse: selectedFilter, statusPembayaran: 'Lunas', updateInventory: false, cart: [] };
-        await apiCall('saveTransaction', txData);
-        fetchData();
+        const txData = { id: null, tanggal: new Date().toISOString().split('T')[0], kategori: 'Reset Siklus Tanam', deskripsi: `Sistem: Siklus baru`, tipe: 'System', jumlah: 0, akun: allowedAccounts[0] || 'Kas Tunai', greenhouse: selectedFilter, statusPembayaran: 'Lunas', updateInventory: false, cart: [] };
+        await apiCall('saveTransaction', txData); fetchData();
       };
 
-      const handleMutasiSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        alert('Mutasi sukses diproses.');
-        setIsMutasiModalOpen(false);
-        fetchData();
-      };
+      const handleMutasiSubmit = async (e) => { e.preventDefault(); setLoading(true); await apiCall('forceRefreshData'); alert('Mutasi hanya simulasi'); setIsMutasiModalOpen(false); fetchData(); };
+      const handleSaveBudget = async (e) => { e.preventDefault(); setLoading(true); await apiCall('saveBudgetPlan', { ghId: selectedFilter, budgetObj: tempBudget }); setIsBudgetModalOpen(false); fetchData(); };
+      const handleSaveInventory = async (e) => { e.preventDefault(); setLoading(true); await apiCall('saveInventory', { data: invModal.data, mode: invModal.mode }); setInvModal({ isOpen: false, mode: 'add', data: { id: '', name: '', category: 'Pupuk', qty: '', unit: 'Liter', gh: 'Pusat' } }); fetchData(); };
+      const handleDeleteInventory = async (id) => { if (!window.confirm(`Hapus item stok?`)) return; setLoading(true); await apiCall('deleteInventory', id); fetchData(); };
+      const handleUseInventorySubmit = async (e) => { e.preventDefault(); const used = parseFloat(useInvModal.usedQty) || 0; if (used <= 0 || used > useInvModal.currentQty) { alert('Jumlah tidak valid!'); return; } setLoading(true); await apiCall('deductInventory', { id: useInvModal.id, usedQty: used }); setUseInvModal({ isOpen: false, id: '', name: '', currentQty: 0, unit: '', usedQty: '' }); fetchData(); };
+      
+      const handleSaveGH = async (e) => { e.preventDefault(); const pPeng = parseFloat(ghModal.data.porsiPengelola) || 0; const pInv = parseFloat(ghModal.data.porsiInvestor) || 0; if (pPeng + pInv !== 100) { alert('Total persentase harus 100%!'); return; } setLoading(true); await apiCall('saveMasterGH', { data: ghModal.data, mode: ghModal.mode }); setGhModal({ isOpen: false, mode: 'add', data: { id: '', name: '', investor: '', porsiPengelola: 30, porsiInvestor: 70 } }); fetchData(); };
+      const handleDeleteGH = async (id) => { if (!window.confirm('Hapus GH ini?')) return; setLoading(true); await apiCall('deleteMasterGH', id); fetchData(); };
+      const handleSaveAcc = async (e) => { e.preventDefault(); setLoading(true); await apiCall('saveMasterAcc', { oldName: accModal.oldName, newName: accModal.newName, mode: accModal.mode }); setAccModal({ isOpen: false, mode: 'add', oldName: '', newName: '' }); fetchData(); };
+      const handleDeleteAcc = async (name) => { if (!window.confirm('Hapus rekening?')) return; setLoading(true); await apiCall('deleteMasterAcc', name); fetchData(); };
+      const handleSaveCat = async (e) => { e.preventDefault(); setLoading(true); await apiCall('saveMasterCat', { type: catModal.type, oldName: catModal.oldName, newName: catModal.newName, mode: catModal.mode }); setCatModal({ isOpen: false, mode: 'add', type: 'expense', oldName: '', newName: '' }); fetchData(); };
+      const handleDeleteCat = async (type, catName) => { if (!window.confirm('Hapus kategori?')) return; setLoading(true); await apiCall('deleteMasterCat', { type, catName }); fetchData(); };
+      const handleSaveAsset = async (e) => { e.preventDefault(); setLoading(true); await apiCall('saveMasterAsset', { data: assetModal.data, mode: assetModal.mode }); setAssetModal({ isOpen: false, mode: 'add', data: { id: '', name: '', price: '', life: 12, gh: 'Pusat', startDate: new Date().toISOString().split('T')[0] } }); fetchData(); };
+      const handleDeleteAsset = async (id) => { if (!window.confirm('Hapus aset ini?')) return; setLoading(true); await apiCall('deleteMasterAsset', id); fetchData(); };
+      
+      const totalDepreciation = useMemo(() => (data.assetList || []).reduce((sum, asset) => sum + ((parseFloat(asset.price) || 0) / (parseInt(asset.life) || 1)), 0), [data.assetList]);
+      const handleDepreciationSubmit = async (e) => { e.preventDefault(); if(totalDepreciation <= 0) return; setLoading(true); const txData = { tanggal: depreciationForm.tanggal, kategori: 'Penyusutan Aset', deskripsi: `Sinking Fund`, tipe: 'Expense', jumlah: totalDepreciation, akun: depreciationForm.akun, greenhouse: 'Pusat', statusPembayaran: 'Lunas', updateInventory: false }; await apiCall('saveTransaction', txData); setIsDepreciationModalOpen(false); fetchData(); };
+      const handlePayoutSubmit = async (e) => { e.preventDefault(); setLoading(true); await apiCall('processDividenPayout', { payouts: dividenData.breakdownData, akun: payoutForm.akun, tanggal: payoutForm.tanggal }); setIsPayoutModalOpen(false); fetchData(); };
+      const handlePayTaxSubmit = async (e) => { e.preventDefault(); const taxBaseAmount = taxForm.base === 'omzet' ? currentSummary.income : Math.max(0, labaBersih); const estimatedTax = taxBaseAmount * (taxForm.rate / 100); setLoading(true); const txData = { tanggal: taxForm.tanggal, kategori: 'Operasional Lainnya', deskripsi: `Pembayaran PPh (${taxForm.rate}%)`, tipe: 'Expense', jumlah: estimatedTax, akun: taxForm.akun, greenhouse: 'Pusat', statusPembayaran: 'Lunas', updateInventory: false }; await apiCall('saveTransaction', txData); setIsTaxModalOpen(false); fetchData(); };
+      
+      const handleSaveUser = async (e) => { e.preventDefault(); setLoading(true); await apiCall('saveMasterUser', { userData: userModal.data, mode: userModal.mode }); setUserModal({ isOpen: false, mode: 'add', data: { name: '', email: '', role: 'Pencatat', access: 'Semua Akses', pin: '' } }); fetchData(); };
+      const handleDeleteUser = async (email) => { if (email === data.currentUser) { alert('Tidak bisa hapus diri sendiri.'); return; } if (!window.confirm('Hapus pengguna?')) return; setLoading(true); await apiCall('deleteMasterUser', email); fetchData(); };
 
-      const handleSaveBudget = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('saveBudgetPlan', { ghId: selectedFilter, budgetObj: tempBudget });
-        setIsBudgetModalOpen(false);
-        fetchData();
-      };
-
-      const handleSaveInventory = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('saveInventory', { data: invModal.data, mode: invModal.mode });
-        setInvModal({ isOpen: false, mode: 'add', data: { id: '', name: '', category: 'Pupuk/Nutrisi', qty: '', unit: 'Liter', gh: 'Pusat' } });
-        fetchData();
-      };
-
-      const handleDeleteInventory = async (id) => {
-        if (!window.confirm(`Hapus item ini?`)) return;
-        setLoading(true);
-        await apiCall('deleteInventory', id);
-        fetchData();
-      };
-
-      const handleUseInventorySubmit = async (e) => {
-        e.preventDefault();
-        const used = parseFloat(useInvModal.usedQty) || 0;
-        if (used <= 0 || used > useInvModal.currentQty) { alert('Jumlah pemakaian tidak valid!'); return; }
-        setLoading(true);
-        const res = await apiCall('deductInventory', { id: useInvModal.id, usedQty: used });
-        setUseInvModal({ isOpen: false, id: '', name: '', currentQty: 0, unit: '', usedQty: '' });
-        fetchData();
-      };
-
-      const handleSaveGH = async (e) => {
-        e.preventDefault();
-        const pPeng = parseFloat(ghModal.data.porsiPengelola) || 0;
-        const pInv = parseFloat(ghModal.data.porsiInvestor) || 0;
-        if (pPeng + pInv !== 100) { alert('Total persentase harus 100%!'); return; }
-        setLoading(true);
-        await apiCall('saveMasterGH', { data: ghModal.data, mode: ghModal.mode });
-        setGhModal({ isOpen: false, mode: 'add', data: { id: '', name: '', investor: '', porsiPengelola: 30, porsiInvestor: 70 } });
-        fetchData();
-      };
-
-      const handleDeleteGH = async (id) => {
-        if (!window.confirm('Hapus GH ini?')) return;
-        setLoading(true);
-        await apiCall('deleteMasterGH', id);
-        fetchData();
-      };
-
-      const handleSaveAcc = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('saveMasterAcc', { oldName: accModal.oldName, newName: accModal.newName, mode: accModal.mode });
-        setAccModal({ isOpen: false, mode: 'add', oldName: '', newName: '' });
-        fetchData();
-      };
-
-      const handleDeleteAcc = async (name) => {
-        if (!window.confirm('Hapus rekening/akun kas ini?')) return;
-        setLoading(true);
-        await apiCall('deleteMasterAcc', name);
-        fetchData();
-      };
-
-      const handleSaveCat = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('saveMasterCat', { type: catModal.type, oldName: catModal.oldName, newName: catModal.newName, mode: catModal.mode });
-        setCatModal({ isOpen: false, mode: 'add', type: 'expense', oldName: '', newName: '' });
-        fetchData();
-      };
-
-      const handleDeleteCat = async (type, catName) => {
-        if (!window.confirm('Hapus kategori ini?')) return;
-        setLoading(true);
-        await apiCall('deleteMasterCat', { type, catName });
-        fetchData();
-      };
-
-      const handleSaveAsset = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('saveMasterAsset', { data: assetModal.data, mode: assetModal.mode });
-        setAssetModal({ isOpen: false, mode: 'add', data: { id: '', name: '', price: '', life: 12, gh: 'Pusat', startDate: new Date().toISOString().split('T')[0] } });
-        fetchData();
-      };
-
-      const handleDeleteAsset = async (id) => {
-        if (!window.confirm('Hapus aset tetap ini?')) return;
-        setLoading(true);
-        await apiCall('deleteMasterAsset', id);
-        fetchData();
-      };
-
-      const handleDepreciationSubmit = async (e) => {
-        e.preventDefault();
-        if(totalDepreciation <= 0) return;
-        setLoading(true);
-        const txData = { tanggal: depreciationForm.tanggal, kategori: 'Penyusutan Aset', deskripsi: `Sinking Fund: Penyusutan (${(data.assetList || []).length} Aset)`, tipe: 'Expense', jumlah: totalDepreciation, akun: depreciationForm.akun, greenhouse: 'Pusat', statusPembayaran: 'Lunas', updateInventory: false };
-        await apiCall('saveTransaction', txData);
-        setIsDepreciationModalOpen(false);
-        fetchData();
-      };
-
-      const handlePayoutSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('processDividenPayout', { payouts: dividenData.breakdownData, akun: payoutForm.akun, tanggal: payoutForm.tanggal });
-        setIsPayoutModalOpen(false);
-        fetchData();
-      };
-
-      const handlePayTaxSubmit = async (e) => {
-        e.preventDefault();
-        const taxBaseAmount = taxForm.base === 'omzet' ? currentSummary.income : Math.max(0, labaBersih);
-        const estimatedTax = taxBaseAmount * (taxForm.rate / 100);
-        setLoading(true);
-        const txData = { tanggal: taxForm.tanggal, kategori: 'Operasional Lainnya', deskripsi: `Pembayaran PPh (${taxForm.rate}%)`, tipe: 'Expense', jumlah: estimatedTax, akun: taxForm.akun, greenhouse: 'Pusat', statusPembayaran: 'Lunas', updateInventory: false };
-        await apiCall('saveTransaction', txData);
-        setIsTaxModalOpen(false);
-        fetchData();
-      };
-
-      const handleSaveUser = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        await apiCall('saveMasterUser', { userData: userModal.data, mode: userModal.mode });
-        setUserModal({ isOpen: false, mode: 'add', data: { name: '', email: '', role: 'Pencatat', access: 'Semua Akses', pin: '' } });
-        fetchData();
-      };
-
-      const handleDeleteUser = async (email) => {
-        if (email === data.currentUser) { alert('Tidak bisa menghapus diri sendiri.'); return; }
-        if (!window.confirm('Hapus pengguna ini?')) return;
-        setLoading(true);
-        await apiCall('deleteMasterUser', email);
-        fetchData();
-      };
-
-      // --- RBAC & PERGERAKAN KAS SYSTEM ---
+      // Kumpulan Data Kalkulasi
       const currentUserData = useMemo(() => (data.usersList || []).find(u => u.email === data.currentUser) || {}, [data.usersList, data.currentUser]);
       const activeUserRole = currentUserData.role || 'Admin';
       const activeUserAccess = currentUserData.access || 'Semua Akses';
-      
-      const allowedAccounts = useMemo(() => {
-        return activeUserAccess === 'Semua Akses' ? (data.accountList || []) : (data.accountList || []).filter(acc => acc === activeUserAccess);
-      }, [activeUserAccess, data.accountList]);
-
-      const allowedBalance = useMemo(() => {
-        return allowedAccounts.reduce((sum, acc) => sum + (data.summary?.accounts?.[acc] || 0), 0);
-      }, [allowedAccounts, data.summary]);
-
-      const dividenData = useMemo(() => {
-         let baseTxs = data.transactions || []; 
-         if (selectedFilter !== 'Semua') {
-            if (selectedFilter.startsWith('INV_')) { const invName = selectedFilter.replace('INV_', ''); baseTxs = baseTxs.filter(t => (data.ghList || []).find(g => g.id === t.greenhouse)?.investor === invName); } 
-            else { baseTxs = baseTxs.filter(t => t.greenhouse === selectedFilter); }
-         }
-         baseTxs = baseTxs.filter(t => t.tanggalFormatted && t.tanggalFormatted.includes(filterMonth) && t.tanggalFormatted.includes(filterYear));
-         const divGHMap = {};
-         baseTxs.forEach(t => {
-            if(t.tipe === 'System') return; 
-            const gh = t.greenhouse || 'Pusat';
-            if (!divGHMap[gh]) divGHMap[gh] = { income: 0, expense: 0 };
-            if (t.tipe === 'Income') divGHMap[gh].income += parseFloat(t.jumlah) || 0;
-            else divGHMap[gh].expense += parseFloat(t.jumlah) || 0;
-         });
-         let totalPemasukan = 0; let totalPengeluaran = 0; let totalLabaKotor = 0; let totalDitahan = 0; let totalLabaBersih = 0; let totalPengelola = 0; let totalInvestor = 0;
-         const breakdownData = [];
-         Object.keys(divGHMap).forEach(gh => {
-            const stats = divGHMap[gh];
-            const ghInfo = (data.ghList || []).find(g => g.id === gh) || { name: gh, investor: '-', porsiPengelola: 100, porsiInvestor: 0 };
-            const pPeng = parseFloat(ghInfo.porsiPengelola) || 0; const pInv = parseFloat(ghInfo.porsiInvestor) || 0;
-            const grossNet = stats.income - stats.expense; const retained = parseFloat(retainedFunds[gh]) || 0; const distributableNet = Math.max(0, grossNet - retained); 
-            totalPemasukan += stats.income; totalPengeluaran += stats.expense; totalLabaKotor += grossNet; totalDitahan += retained; totalLabaBersih += distributableNet;
-            let jatahPengelola = 0; let jatahInvestor = 0;
-            if (distributableNet > 0) { jatahPengelola = distributableNet * (pPeng / 100); jatahInvestor = distributableNet * (pInv / 100); totalPengelola += jatahPengelola; totalInvestor += jatahInvestor; }
-            breakdownData.push({ gh, name: ghInfo.name, investor: ghInfo.investor, grossNet, retained, distributableNet, pPeng, pInv, jatahPengelola, jatahInvestor, income: stats.income, expense: stats.expense });
-         });
-         return { breakdownData, totalPemasukan, totalPengeluaran, totalLabaKotor, totalDitahan, totalLabaBersih, totalPengelola, totalInvestor };
-      }, [selectedFilter, filterMonth, filterYear, data.transactions, data.ghList, retainedFunds]);
+      const allowedAccounts = useMemo(() => activeUserAccess === 'Semua Akses' ? (data.accountList || []) : (data.accountList || []).filter(acc => acc === activeUserAccess), [activeUserAccess, data.accountList]);
+      const allowedBalance = useMemo(() => allowedAccounts.reduce((sum, acc) => sum + (data.summary?.accounts?.[acc] || 0), 0), [allowedAccounts, data.summary]);
 
       const filteredTransactions = useMemo(() => {
         let baseTxs = data.transactions || []; 
@@ -445,26 +204,10 @@
         return baseTxs.filter(t => t.tanggalFormatted && t.tanggalFormatted.includes(filterMonth) && t.tanggalFormatted.includes(filterYear));
       }, [selectedFilter, data.transactions, filterMonth, filterYear, data.ghList]);
 
-      const salesData = useMemo(() => {
-         const incomes = (filteredTransactions || []).filter(t => t.tipe === 'Income');
-         const total = incomes.reduce((sum, t) => sum + (parseFloat(t.jumlah) || 0), 0);
-         const byCategory = {};
-         incomes.forEach(t => { byCategory[t.kategori] = (byCategory[t.kategori] || 0) + (parseFloat(t.jumlah) || 0); });
-         return { list: incomes, total, sortedCategories: Object.entries(byCategory).sort((a,b) => b[1] - a[1]), topCategory: Object.entries(byCategory).sort((a,b) => b[1] - a[1])[0] || null };
-      }, [filteredTransactions]);
-
-      const filteredInventory = useMemo(() => {
-        let baseInv = data.inventoryList || []; 
-        if (selectedFilter !== 'Semua') {
-          if (selectedFilter.startsWith('INV_')) { const invName = selectedFilter.replace('INV_', ''); baseInv = baseInv.filter(i => (data.ghList || []).find(g => g.id === i.gh)?.investor === invName); } 
-          else { baseInv = baseInv.filter(i => i.gh === selectedFilter); }
-        }
-        return baseInv;
-      }, [selectedFilter, data.inventoryList, data.ghList]);
-
       const expenseTxs = useMemo(() => (filteredTransactions || []).filter(t => t.tipe === 'Expense'), [filteredTransactions]);
       const incomeTxs = useMemo(() => (filteredTransactions || []).filter(t => t.tipe === 'Income'), [filteredTransactions]);
       const currentSummary = useMemo(() => ({ income: incomeTxs.reduce((s,t) => s + (parseFloat(t.jumlah) || 0), 0), expense: expenseTxs.reduce((s,t) => s + (parseFloat(t.jumlah) || 0), 0) }), [incomeTxs, expenseTxs]);
+      const labaBersih = currentSummary.income - currentSummary.expense;
 
       const saldoData = useMemo(() => {
         const monthIdx = monthNamesList.indexOf(filterMonth); const year = parseInt(filterYear); const filterStartDate = new Date(year, monthIdx, 1);
@@ -480,6 +223,15 @@
         });
         return { saldoAwal, saldoAkhir: saldoAwal + labaBersih };
       }, [data.transactions, filterMonth, filterYear, labaBersih, selectedFilter, data.ghList]);
+
+      const cycleStartDate = useMemo(() => {
+        let resets = (data.transactions || []).filter(t => t.kategori === 'Reset Siklus Tanam');
+        if (selectedFilter !== 'Semua' && !selectedFilter.startsWith('INV_')) { resets = resets.filter(t => t.greenhouse === selectedFilter); } 
+        else if (selectedFilter.startsWith('INV_')) { const invName = selectedFilter.replace('INV_', ''); resets = resets.filter(t => (data.ghList || []).find(g => g.id === t.greenhouse)?.investor === invName); }
+        if (resets.length === 0) return null;
+        resets.sort((a,b) => new Date(b.tanggalRaw) - new Date(a.tanggalRaw)); 
+        return new Date(resets[0].tanggalRaw);
+      }, [data.transactions, selectedFilter, data.ghList]);
 
       const cycleTxs = useMemo(() => {
         let baseTxs = data.transactions || [];
@@ -515,40 +267,128 @@
         });
         return monthlyData;
       }, [selectedFilter, filterYear, data.transactions, data.ghList]);
+      const maxCashflowValue = Math.max(...yearlyCashflow.map(Math.abs), 1);
+      const yearlyCashflowTotal = yearlyCashflow.reduce((a, b) => a + b, 0);
+
+      const hutangPiutangSummary = useMemo(() => {
+         const debts = (filteredTransactions || []).filter(t => t.tipe === 'Expense' && t.status === 'Hutang');
+         const receives = (filteredTransactions || []).filter(t => t.tipe === 'Income' && t.status === 'Piutang');
+         return { hutangList: debts, totalHutang: debts.reduce((s,t) => s + parseFloat(t.jumlah), 0), piutangList: receives, totalPiutang: receives.reduce((s,t) => s + parseFloat(t.jumlah), 0) };
+      }, [filteredTransactions]);
+
+      let currentPerc = 0; const legendData = []; const donutColors = ['#A3E635', '#4A7B2A', '#166534', '#86EFAC', '#D9F99D', '#F4F4F5'];
+      const sortedCats = Object.entries(expenseTxs.reduce((acc, t) => { acc[t.kategori] = (acc[t.kategori] || 0) + parseFloat(t.jumlah); return acc; }, {})).sort((a,b) => b[1] - a[1]);
+      const gradientStr = sortedCats.slice(0, 4).map((item, index) => {
+         const perc = currentSummary.expense > 0 ? (item[1] / currentSummary.expense) * 100 : 0;
+         let shortName = item[0]; if(shortName.includes("Nutrisi")) shortName = "Nutrisi"; else if(shortName.includes("Gaji")) shortName = "Gaji Pekerja"; else if(shortName.includes("Bibit")) shortName = "Bibit"; else if(shortName.includes("Listrik") || shortName.includes("Air")) shortName = "Utilitas";
+         legendData.push({ name: shortName, perc: perc.toFixed(1), color: donutColors[index] }); 
+         const res = `${donutColors[index]} ${currentPerc}% ${currentPerc + perc}%`; currentPerc += perc; return res;
+      });
+      if (sortedCats.length > 4) { gradientStr.push(`${donutColors[4]} ${currentPerc}% 100%`); legendData.push({ name: 'Lainnya', perc: (100 - currentPerc).toFixed(1), color: donutColors[4] }); }
+      const dynamicDonutStyle = gradientStr.length > 0 ? { background: `conic-gradient(${gradientStr.join(', ')})` } : { background: '#F1F5F9' };
+
+      const dividenData = useMemo(() => {
+         let baseTxs = data.transactions || []; 
+         if (selectedFilter !== 'Semua') {
+            if (selectedFilter.startsWith('INV_')) { const invName = selectedFilter.replace('INV_', ''); baseTxs = baseTxs.filter(t => (data.ghList || []).find(g => g.id === t.greenhouse)?.investor === invName); } 
+            else { baseTxs = baseTxs.filter(t => t.greenhouse === selectedFilter); }
+         }
+         baseTxs = baseTxs.filter(t => t.tanggalFormatted && t.tanggalFormatted.includes(filterMonth) && t.tanggalFormatted.includes(filterYear));
+         const divGHMap = {};
+         baseTxs.forEach(t => {
+            if(t.tipe === 'System') return; 
+            const gh = t.greenhouse || 'Pusat';
+            if (!divGHMap[gh]) divGHMap[gh] = { income: 0, expense: 0 };
+            if (t.tipe === 'Income') divGHMap[gh].income += parseFloat(t.jumlah) || 0; else divGHMap[gh].expense += parseFloat(t.jumlah) || 0;
+         });
+         let totalPemasukan = 0; let totalPengeluaran = 0; let totalLabaKotor = 0; let totalDitahan = 0; let totalLabaBersih = 0; let totalPengelola = 0; let totalInvestor = 0; const breakdownData = [];
+         Object.keys(divGHMap).forEach(gh => {
+            const stats = divGHMap[gh];
+            const ghInfo = (data.ghList || []).find(g => g.id === gh) || { name: gh, investor: '-', porsiPengelola: 100, porsiInvestor: 0 };
+            const pPeng = parseFloat(ghInfo.porsiPengelola) || 0; const pInv = parseFloat(ghInfo.porsiInvestor) || 0;
+            const grossNet = stats.income - stats.expense; const retained = parseFloat(retainedFunds[gh]) || 0; const distributableNet = Math.max(0, grossNet - retained); 
+            totalPemasukan += stats.income; totalPengeluaran += stats.expense; totalLabaKotor += grossNet; totalDitahan += retained; totalLabaBersih += distributableNet;
+            let jatahPengelola = 0; let jatahInvestor = 0;
+            if (distributableNet > 0) { jatahPengelola = distributableNet * (pPeng / 100); jatahInvestor = distributableNet * (pInv / 100); totalPengelola += jatahPengelola; totalInvestor += jatahInvestor; }
+            breakdownData.push({ gh, name: ghInfo.name, investor: ghInfo.investor, grossNet, retained, distributableNet, pPeng, pInv, jatahPengelola, jatahInvestor, income: stats.income, expense: stats.expense });
+         });
+         return { breakdownData, totalPemasukan, totalPengeluaran, totalLabaKotor, totalDitahan, totalLabaBersih, totalPengelola, totalInvestor };
+      }, [selectedFilter, filterMonth, filterYear, data.transactions, data.ghList, retainedFunds]);
+
+      const salesData = useMemo(() => {
+         const incomes = (filteredTransactions || []).filter(t => t.tipe === 'Income');
+         const total = incomes.reduce((sum, t) => sum + (parseFloat(t.jumlah) || 0), 0);
+         const byCategory = {}; incomes.forEach(t => { byCategory[t.kategori] = (byCategory[t.kategori] || 0) + (parseFloat(t.jumlah) || 0); });
+         const sorted = Object.entries(byCategory).sort((a,b) => b[1] - a[1]);
+         return { list: incomes, total, sortedCategories: sorted, topCategory: sorted.length > 0 ? sorted[0] : null };
+      }, [filteredTransactions]);
+
+      const filteredInventory = useMemo(() => {
+        let baseInv = data.inventoryList || []; 
+        if (selectedFilter !== 'Semua') {
+          if (selectedFilter.startsWith('INV_')) { const invName = selectedFilter.replace('INV_', ''); baseInv = baseInv.filter(i => (data.ghList || []).find(g => g.id === i.gh)?.investor === invName); } 
+          else { baseInv = baseInv.filter(i => i.gh === selectedFilter); }
+        }
+        return baseInv;
+      }, [selectedFilter, data.inventoryList, data.ghList]);
+
+      const userName = data.currentUser ? data.currentUser.split('@')[0] : 'User';
+      const uniqueInvestors = useMemo(() => [...new Set((data.ghList || []).map(g => g.investor))].filter(i => i !== 'Umum'), [data.ghList]);
+
+      const exportToCSV = () => {
+        const headers = ['Tanggal', 'Kategori', 'Lokasi/GH', 'Akun', 'Tipe', 'Nominal', 'Keterangan'];
+        const csvContent = [headers.join(','), ...(filteredTransactions || []).filter(t => t.tipe !== 'System').map(t => [t.tanggalFormatted, `"${t.kategori}"`, `"${t.greenhouse || 'Pusat'}"`, `"${t.akun}"`, t.tipe, t.jumlah, `"${t.deskripsi || ''}"`].join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Export_Kebun_${new Date().getTime()}.csv`; link.click();
+      };
+
+      const SidebarItem = ({ active, onClick, icon, label }) => (<button onClick={onClick} className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl font-bold transition-all duration-200 ${active ? 'bg-[#EFFFF0] text-[#4A7B2A]' : 'text-slate-400 hover:bg-slate-50'}`}><div className="flex items-center gap-3"><Icon name={icon} size={20} /> <span className="text-sm">{label}</span></div>{active && <div className="w-1.5 h-1.5 rounded-full bg-[#4A7B2A]"></div>}</button>);
+      const MobileNavItem = ({ active, onClick, icon, label }) => (<button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all flex-1 ${active ? 'text-[#4A7B2A] scale-110' : 'text-slate-300 hover:text-slate-400'}`}><div className={active ? 'bg-[#EFFFF0] p-2 rounded-2xl' : 'p-2'}><Icon name={icon} size={20} /></div><span className="text-[9px] font-black uppercase tracking-tighter">{label}</span></button>);
+
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-[#F7F8FA] p-6 animate-fade-in">
+            <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-md p-10 border border-slate-100 flex flex-col items-center">
+              <div className="w-20 h-20 bg-slate-900 rounded-[20px] flex items-center justify-center shadow-md mb-6"><div className="w-6 h-6 bg-[#8CC63F] rounded-full"></div></div>
+              <h1 className="font-extrabold text-3xl text-slate-900 mb-1">Agrifi<span className="text-[#8CC63F]">.</span></h1>
+              <p className="text-[#94A3B8] text-sm font-medium tracking-tight mb-10 text-center">Sistem Keuangan Greenhouse</p>
+              <form onSubmit={handleLogin} className="w-full space-y-5">
+                {loginError && <div className="bg-rose-50 text-rose-600 text-xs font-bold p-4 rounded-xl border border-rose-100 text-center">{loginError}</div>}
+                <div className="w-full text-left"><label className="text-[10px] font-extrabold text-[#CBD5E1] uppercase tracking-widest ml-2 mb-2 block">Identitas Tim</label><input type="email" required className="w-full px-5 py-4 bg-[#F8FAFC] border-none rounded-[16px] outline-none focus:ring-2 focus:ring-[#4A7B2A]/20 transition-all font-bold text-slate-700" value={loginForm.email} onChange={e => setLoginForm({...loginForm, email: e.target.value})} placeholder="admin@melonfarm.co.id" /></div>
+                <div className="w-full text-left"><label className="text-[10px] font-extrabold text-[#CBD5E1] uppercase tracking-widest ml-2 mb-2 block">PIN Keamanan</label><input type="password" required className="w-full px-5 py-4 bg-[#F8FAFC] border-none rounded-[16px] outline-none focus:ring-2 focus:ring-[#4A7B2A]/20 transition-all font-black tracking-[0.5em] text-center text-slate-900" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} placeholder="••••" /></div>
+                <button type="submit" disabled={loading} className="w-full bg-[#4A7B2A] hover:bg-[#3b6322] text-white py-4 mt-2 rounded-[20px] font-bold shadow-md shadow-[#4A7B2A]/20 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50">
+                  {loading ? <Icon name="spinner" className="fa-spin" size={18} /> : <span className="uppercase tracking-widest text-sm">Masuk Sistem</span>}
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div className="min-h-screen flex bg-[#F7F8FA] text-slate-800">
-          {/* Menu Sidebar */}
+          {/* Sidebar */}
           <aside className="w-[300px] border-r border-slate-200 hidden lg:flex flex-col bg-white p-8 shrink-0">
             <div className="flex items-center gap-4 mb-12"><div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg"><div className="w-3 h-3 bg-[#8CC63F] rounded-full"></div></div><h1 className="font-black text-2xl text-slate-900 tracking-tighter">Agrifi.</h1></div>
-            <div className="flex-1 space-y-2">
-              <SidebarItem active={view === 'dashboard'} onClick={() => setView('dashboard')} icon="border-all" label="Dashboard" />
-              <SidebarItem active={view === 'transactions'} onClick={() => setView('transactions')} icon="list" label="Histori Transaksi" />
-              <SidebarItem active={view === 'inventory'} onClick={() => setView('inventory')} icon="boxes-stacked" label="Inventori Stok" />
-              {activeUserRole === 'Super Admin' && <SidebarItem active={view === 'cycle'} onClick={() => setView('cycle')} icon="clipboard-list" label="Siklus & Investor" />}
-              <SidebarItem active={view === 'accounts'} onClick={() => setView('accounts')} icon="wallet" label="Kas & Rekening" />
-              {activeUserRole === 'Super Admin' && <><div className="my-6 border-t border-slate-50"></div><SidebarItem active={view === 'settings'} onClick={() => setView('settings')} icon="gear" label="Pengaturan" /></>}
-            </div>
+            <div className="flex-1 space-y-2"><SidebarItem active={view === 'dashboard'} onClick={() => setView('dashboard')} icon="border-all" label="Dashboard" /><SidebarItem active={view === 'transactions'} onClick={() => setView('transactions')} icon="list" label="Histori Transaksi" /><SidebarItem active={view === 'inventory'} onClick={() => setView('inventory')} icon="boxes-stacked" label="Inventori Stok" />{activeUserRole === 'Super Admin' && <SidebarItem active={view === 'cycle'} onClick={() => setView('cycle')} icon="clipboard-list" label="Siklus & Investor" />}<SidebarItem active={view === 'accounts'} onClick={() => setView('accounts')} icon="wallet" label="Kas & Rekening" />{activeUserRole === 'Super Admin' && <><div className="my-6 border-t border-slate-50"></div><SidebarItem active={view === 'settings'} onClick={() => setView('settings')} icon="gear" label="Pengaturan" /></>}</div>
             <div className="mt-auto bg-slate-50 p-4 rounded-[24px] border border-slate-100 flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                  <div className="font-black text-xs">{userName}</div>
-               </div>
-               <button onClick={handleLogout} className="text-rose-500"><Icon name="arrow-right-from-bracket"/></button>
+               <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-white border border-slate-200 overflow-hidden"><img src={`https://ui-avatars.com/api/?name=${userName}&background=4A7B2A&color=fff`} /></div><div className="flex-1 overflow-hidden"><p className="text-xs font-black truncate">{userName}</p><p className="text-[9px] text-slate-400 font-bold uppercase">{activeUserRole}</p></div></div>
+               <button onClick={handleLogout} className="text-rose-500 hover:bg-rose-50 p-2 rounded-xl"><Icon name="arrow-right-from-bracket"/></button>
             </div>
           </aside>
 
-          {/* Konten Utama */}
           <main className="flex-1 flex flex-col h-screen overflow-hidden">
-            <header className="h-20 px-8 flex items-center justify-between bg-white border-b z-10 shadow-sm">
+            <header className="h-20 px-8 flex items-center justify-between bg-white border-b z-10 shadow-sm shrink-0">
               <div className="flex items-center gap-4">
-                <select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)} className="bg-slate-50 text-slate-700 font-bold px-4 py-2 border rounded-full text-xs">
-                    <option value="Semua">Semua Area & GH</option>
-                    {(data.ghList || []).map(gh => <option key={gh.id} value={gh.id}>{gh.name}</option>)}
-                </select>
+                <div className="lg:hidden w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center"><div className="w-2 h-2 bg-[#8CC63F] rounded-full"></div></div>
+                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-100">
+                   <div className="p-2 bg-white rounded-full shadow-sm text-slate-400"><Icon name="filter" size={14}/></div>
+                   <select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)} className="bg-transparent text-slate-700 font-bold px-4 py-1 outline-none border-none text-xs cursor-pointer max-w-[150px] md:max-w-xs truncate"><option value="Semua">Semua Area & GH</option><optgroup label="Unit Greenhouse">{(data.ghList || []).map(gh => <option key={gh.id} value={gh.id}>{gh.name}</option>)}</optgroup><optgroup label="Investor">{(uniqueInvestors || []).map(inv => <option key={inv} value={`INV_${inv}`}>Seluruh Unit {inv}</option>)}</optgroup></select>
+                </div>
               </div>
               <div className="flex items-center gap-4">
-                <button onClick={handleForceSync} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all"><Icon name="rotate" className={loading ? "fa-spin" : ""}/> SINKRON DATA</button>
-                <button onClick={() => setIsModalOpen(true)} className="bg-[#4A7B2A] text-white px-6 py-2.5 rounded-2xl text-xs font-black shadow-lg"><Icon name="plus"/> CATAT TRANSAKSI</button>
+                {loading && <Icon name="spinner" className="fa-spin text-slate-300" size={18} />}
+                <button onClick={() => fetchData()} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95"><Icon name="rotate" className={loading ? "fa-spin" : ""} size={14}/><span className="hidden md:inline">SINKRON</span></button>
+                <button onClick={() => setIsModalOpen(true)} className="hidden md:flex items-center gap-2 bg-[#4A7B2A] hover:bg-slate-900 text-white px-6 py-2.5 rounded-2xl text-xs font-black shadow-lg shadow-[#4A7B2A]/20 transition-all active:scale-95"><Icon name="plus" size={12}/> CATAT TRANSAKSI</button>
               </div>
             </header>
 
@@ -556,48 +396,84 @@
               {view === 'dashboard' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-[#4A7B2A] rounded-[24px] p-6 text-white shadow-xl flex flex-col justify-between">
-                      <div><p className="text-sm font-bold text-white/90">Akun Finansial (Akses)</p><h3 className="text-3xl font-black mt-2">{formatCurrency(allowedBalance)}</h3></div>
-                      <p className="text-[11px] text-white/70 mt-4">Akses ke {allowedAccounts.length} akun kas</p>
+                    <div className="bg-[#4A7B2A] rounded-[24px] p-6 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                      <div className="relative z-10"><p className="text-sm font-bold text-white/90">Akun Finansial</p><h3 className="text-3xl font-black mt-2">{formatCurrency(allowedBalance)}</h3></div>
+                      <p className="text-[11px] text-white/70 mt-4 relative z-10">Akses ke {allowedAccounts.length} akun kas</p>
                     </div>
-                    <div className="bg-white rounded-[24px] p-6 border shadow-sm">
-                      <p className="text-sm font-bold text-slate-600">Pemasukan Bulan Ini</p><h3 className="text-3xl font-black text-slate-900 mt-2">{formatCurrency(currentSummary.income)}</h3>
+                    <div className="bg-white rounded-[24px] p-6 border shadow-sm flex flex-col justify-between">
+                      <div><p className="text-sm font-bold text-slate-600">Pemasukan Bulan Ini</p><h3 className="text-3xl font-black text-slate-900 mt-2">{formatCurrency(currentSummary.income)}</h3></div>
+                      <div className="flex justify-between items-center mt-4 text-xs"><span className="text-slate-400 font-bold">TRANSAKSI</span><span className="font-black text-slate-800">{(incomeTxs || []).length} trx</span></div>
                     </div>
-                    <div className="bg-white rounded-[24px] p-6 border shadow-sm">
-                      <p className="text-sm font-bold text-slate-600">Pengeluaran Bulan Ini</p><h3 className="text-3xl font-black text-slate-900 mt-2">{formatCurrency(currentSummary.expense)}</h3>
+                    <div className="bg-white rounded-[24px] p-6 border shadow-sm flex flex-col justify-between">
+                      <div><p className="text-sm font-bold text-slate-600">Pengeluaran Bulan Ini</p><h3 className="text-3xl font-black text-slate-900 mt-2">{formatCurrency(currentSummary.expense)}</h3></div>
+                      <div className="flex justify-between items-center mt-4 text-xs"><span className="text-slate-400 font-bold">TRANSAKSI</span><span className="font-black text-slate-800">{(expenseTxs || []).length} trx</span></div>
                     </div>
-                    <div className="bg-white rounded-[24px] p-6 border shadow-sm">
-                      <p className="text-sm font-bold text-slate-600">Pergerakan Kas</p><h3 className="text-3xl font-black text-slate-900 mt-2">{formatCurrency(saldoData.saldoAkhir)}</h3>
+                    <div className="bg-white rounded-[24px] p-6 border shadow-sm flex flex-col justify-between">
+                      <div><p className="text-sm font-bold text-slate-600">Pergerakan Kas (Bulan)</p><h3 className="text-3xl font-black text-slate-900 mt-2">{formatCurrency(saldoData.saldoAkhir)}</h3></div>
+                      <div className="flex justify-between items-center mt-4 text-xs"><span className="text-slate-400 font-bold">SALDO AWAL</span><span className="font-black text-slate-800">{formatCurrency(saldoData.saldoAwal)}</span></div>
                     </div>
                   </div>
                   
-                  {/* Grafik */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-white p-8 rounded-[24px] border shadow-sm flex flex-col h-[420px]">
-                        <h3 className="font-bold text-slate-900 text-lg mb-4">Tren Cashflow (Tahunan)</h3>
-                        <div className="flex gap-2 mb-4">
-                           <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="bg-slate-50 border px-4 py-2 rounded-full text-xs">
-                              {monthNamesList.map(m => <option key={m} value={m}>{m}</option>)}
-                           </select>
-                           <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="bg-slate-50 border px-4 py-2 rounded-full text-xs"><option value="2026">2026</option><option value="2025">2025</option></select>
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                           <div><h3 className="font-bold text-slate-900 text-lg mb-2">Tren Cashflow (Tahunan)</h3><h4 className="text-3xl font-black text-slate-900 tracking-tight">{formatCurrency(yearlyCashflowTotal)}</h4></div>
+                           <div className="flex gap-2">
+                               <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="bg-slate-50 border px-4 py-2 rounded-full text-xs font-bold">{monthNamesList.map(m => <option key={m} value={m}>{m}</option>)}</select>
+                               <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="bg-slate-50 border px-4 py-2 rounded-full text-xs font-bold"><option value="2026">2026</option><option value="2025">2025</option></select>
+                           </div>
                         </div>
-                        <div className="flex-1 flex justify-between items-end gap-2 mt-4">
+                        <div className="flex-1 flex justify-between items-end gap-2 mt-4 relative">
+                          <div className="absolute top-[70%] left-0 w-full border-t border-slate-100 z-0"></div>
                           {(yearlyCashflow || []).map((val, i) => (
-                            <div key={i} className="bg-[#4A7B2A] flex-1 rounded-md" style={{ height: `${Math.max(10, Math.min(100, (Math.abs(val) / maxCashflowValue) * 100))}%` }}></div>
+                            <div key={i} className="h-full flex-1 relative group z-10 cursor-pointer">
+                              {val >= 0 ? <div className="w-full mx-auto bg-[#4A7B2A] rounded-md absolute bottom-[30%] hover:bg-[#3b6322] transition-all" style={{height: `${(val/maxCashflowValue)*70}%`}}></div> : <div className="w-full mx-auto bg-[#A3E635] rounded-md absolute top-[70%] hover:bg-[#8CC63F] transition-all" style={{height: `${(Math.abs(val)/maxCashflowValue)*30}%`}}></div>}
+                            </div>
                           ))}
                         </div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-400 pt-3 px-1 mt-2">{monthNamesList.map(m => <span key={m} className="flex-1 text-center hidden md:inline">{m}</span>)}</div>
                     </div>
                     
                     <div className="bg-white p-8 rounded-[24px] border shadow-sm flex flex-col h-auto min-h-[420px]">
                       <h3 className="font-bold text-slate-900 text-sm mb-1">Distribusi Pengeluaran</h3>
+                      <div className="w-48 h-48 mx-auto relative flex items-center justify-center rounded-full shrink-0 my-6" style={dynamicDonutStyle}><div className="w-24 h-24 bg-white rounded-full shadow-inner"></div></div>
                       <div className="w-full mt-auto border-t pt-4">
-                          <div className="w-full flex flex-col gap-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2 pb-2">
+                          <div className="w-full flex flex-col gap-3 max-h-[160px] overflow-y-auto custom-scrollbar pr-2 pb-2">
                              {legendData.map((item, idx) => (
-                                <div key={idx} className="flex justify-between items-center text-xs"><span>{item.name}</span><span className="font-bold">{item.perc}%</span></div>
+                                <div key={idx} className="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}}></div><span className="font-bold text-slate-700">{item.name}</span></div><span className="font-black text-[#4A7B2A]">{item.perc}%</span></div>
                              ))}
                           </div>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                     <div className="bg-white rounded-[24px] border shadow-sm p-6 flex flex-col h-[350px]">
+                        <div className="flex justify-between items-center mb-6"><div><h3 className="font-bold text-slate-900 text-lg">Budget Tracker</h3><p className="text-xs text-slate-400 mt-1">{cycleStartDate ? `Siklus dimulai ${cycleStartDate.toLocaleDateString('id-ID')}` : 'Belum ada siklus'}</p></div></div>
+                        <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                           {budgetTrackerItems.length > 0 ? budgetTrackerItems.map((item, i) => (
+                              <div key={i} className="border border-slate-100 rounded-[16px] p-4 bg-white shadow-sm"><div className="flex justify-between items-start mb-3"><div><h4 className="font-bold text-xs text-slate-800">{item.cat}</h4><div className="text-[10px] text-slate-400 mt-1"><strong className="text-slate-900">{formatCurrency(item.real)}</strong> / {formatCurrency(item.plan)}</div></div><div className={`text-lg font-black ${item.isOver ? 'text-rose-500' : 'text-slate-700'}`}>{item.percentage}%</div></div><div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div className={`h-full ${item.isOver ? 'bg-rose-500' : 'bg-[#4A7B2A]'}`} style={{ width: `${item.percentage}%` }}></div></div></div>
+                           )) : (<div className="text-center py-10"><p className="text-xs font-bold text-slate-400">Belum ada RAB diatur.</p></div>)}
+                        </div>
+                     </div>
+                     <div className="bg-white rounded-[24px] border shadow-sm p-6 flex flex-col h-[350px]">
+                        <h3 className="font-bold text-slate-900 text-lg mb-6">Akun Finansial</h3>
+                        <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                           {(allowedAccounts || []).map((acc, i) => (
+                                 <div key={i} className="border border-slate-100 rounded-[16px] p-5 hover:bg-slate-50 shadow-sm flex justify-between items-center"><div><h4 className="font-black text-slate-800 text-[13px]">{acc}</h4></div><div className="text-lg font-black text-[#4A7B2A]">{formatCurrency(data.summary?.accounts?.[acc] || 0)}</div></div>
+                           ))}
+                        </div>
+                     </div>
+                     <div className="bg-white rounded-[24px] border shadow-sm p-6 flex flex-col h-[350px]">
+                        <h3 className="font-bold text-slate-900 text-lg mb-6">Manajemen Hutang</h3>
+                        <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                           <div className="border border-indigo-100 rounded-[16px] p-5 bg-indigo-50"><div className="flex justify-between items-center"><h4 className="font-bold text-[11px] uppercase tracking-widest text-indigo-800">Piutang Mitra</h4><span className="text-xs font-black text-indigo-600">{hutangPiutangSummary.piutangList.length} Bill</span></div><div className="text-2xl font-black text-slate-900 mt-2">{formatCurrency(hutangPiutangSummary.totalPiutang)}</div></div>
+                           {hutangPiutangSummary.hutangList.map((t) => (
+                              <div key={t.id} className="border border-slate-100 rounded-[16px] p-4 bg-white shadow-sm flex justify-between items-center"><div><h4 className="font-bold text-xs text-slate-800">{t.kategori}</h4><div className="text-[9px] text-slate-400 mt-1">{t.tanggalFormatted}</div></div><div className="text-sm font-black text-rose-500">{formatCurrency(t.jumlah)}</div></div>
+                           ))}
+                        </div>
+                     </div>
                   </div>
                 </div>
               )}
@@ -605,26 +481,27 @@
               {/* VIEW: HISTORI TRANSAKSI */}
               {view === 'transactions' && (
                 <div className="space-y-6 animate-fade-in">
+                   <div className="flex justify-between items-end"><h2 className="text-2xl font-black">Histori Transaksi</h2><button onClick={exportToCSV} className="p-3 bg-white border rounded-xl shadow-sm"><Icon name="download" size={16}/></button></div>
                    <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
                       <div className="overflow-x-auto w-full custom-scrollbar">
                         <table className="w-full text-left min-w-[700px]">
                           <thead>
                              <tr className="bg-slate-50 border-b">
-                               <th className="p-5 text-xs font-black text-slate-400">Tanggal</th>
-                               <th className="p-5 text-xs font-black text-slate-400">Kategori & Keterangan</th>
-                               <th className="p-5 text-xs font-black text-slate-400">Lokasi</th>
-                               <th className="p-5 text-xs font-black text-slate-400 text-right">Nominal</th>
+                               <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">Tanggal</th>
+                               <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">Kategori & Keterangan</th>
+                               <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">Lokasi</th>
+                               <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Nominal</th>
                                <th className="p-5"></th>
                              </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {(filteredTransactions || []).map(t => (
-                              <tr key={t.id} className="hover:bg-slate-50">
+                              <tr key={t.id} className="hover:bg-slate-50 group transition-colors">
                                  <td className="p-5 text-sm font-medium text-slate-500 whitespace-nowrap">{t.tanggalFormatted}</td>
-                                 <td className="p-5"><div className="font-bold text-slate-900">{t.kategori}</div><div className="text-xs text-slate-400">{t.deskripsi || '-'}</div></td>
-                                 <td className="p-5"><span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-md">{t.greenhouse || 'Pusat'}</span></td>
-                                 <td className="p-5 text-right font-bold whitespace-nowrap">{formatCurrency(t.jumlah)}</td>
-                                 <td className="p-5 text-center"><button onClick={() => handleDeleteTransaction(t.id)} className="text-rose-500"><Icon name="trash-can"/></button></td>
+                                 <td className="p-5 min-w-[200px]"><div className="font-bold text-slate-900">{t.kategori}</div><div className="text-xs text-slate-400 mt-1">{t.deskripsi || '-'}</div></td>
+                                 <td className="p-5"><span className="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg uppercase whitespace-nowrap">{t.greenhouse || 'Pusat'}</span></td>
+                                 <td className="p-5 text-right font-black whitespace-nowrap text-base">{t.tipe === 'Income' ? <span className="text-emerald-600">+{formatCurrency(t.jumlah)}</span> : <span className="text-slate-800">-{formatCurrency(t.jumlah)}</span>}</td>
+                                 <td className="p-5 text-center"><div className="flex gap-2"><button onClick={() => handleEditTransaction(t)} className="p-2.5 bg-white border shadow-sm rounded-lg hover:text-[#4A7B2A] text-slate-400"><Icon name="pen" size={14}/></button><button onClick={() => handleDeleteTransaction(t.id)} className="p-2.5 bg-white border shadow-sm rounded-lg hover:text-rose-500 text-slate-400"><Icon name="trash-can" size={14}/></button></div></td>
                               </tr>
                             ))}
                           </tbody>
@@ -633,8 +510,687 @@
                    </div>
                 </div>
               )}
+
+              {/* VIEW: INVENTORY */}
+              {view === 'inventory' && (
+                <div className="space-y-6 animate-fade-in">
+                   <div className="flex justify-between items-end"><h2 className="text-2xl font-black">Inventori Stok</h2><button onClick={() => setInvModal({ isOpen: true, mode: 'add', data: { id: '', name: '', category: 'Pupuk/Nutrisi', qty: '', unit: 'Liter', gh: (data.ghList || [])[0]?.id || 'Pusat' } })} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-xs shadow-lg"><Icon name="plus"/> Tambah Manual</button></div>
+                   <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto w-full custom-scrollbar">
+                        <table className="w-full text-left min-w-[700px]">
+                          <thead><tr className="bg-slate-50 border-b"><th className="p-5 text-xs font-black text-slate-400 uppercase">Barang</th><th className="p-5 text-xs font-black text-slate-400 uppercase">Lokasi</th><th className="p-5 text-xs font-black text-slate-400 uppercase text-center">Stok</th><th className="p-5 text-center">Aksi</th></tr></thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {(filteredInventory || []).map(item => (
+                              <tr key={item.id} className="hover:bg-slate-50 group">
+                                 <td className="p-5 min-w-[200px]"><div className="font-bold text-slate-900">{item.name}</div><div className="text-[10px] font-bold text-slate-400 mt-1">{item.category} • {item.lastUpdate}</div></td>
+                                 <td className="p-5"><span className="px-3 py-1.5 bg-amber-50 text-amber-700 text-[10px] font-black rounded-lg uppercase">{item.gh}</span></td>
+                                 <td className="p-5 text-center"><div className={`text-xl font-black ${item.qty < 10 ? 'text-rose-600' : 'text-[#4A7B2A]'}`}>{item.qty} <span className="text-xs font-bold text-slate-500">{item.unit}</span></div></td>
+                                 <td className="p-5 text-center"><div className="flex gap-2 justify-center"><button onClick={() => setUseInvModal({ isOpen: true, id: item.id, name: item.name, currentQty: item.qty, unit: item.unit, usedQty: '' })} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm">Pakai</button><button onClick={() => setInvModal({ isOpen: true, mode: 'edit', data: { ...item } })} className="p-2.5 bg-white border shadow-sm rounded-lg hover:text-[#4A7B2A] text-slate-400"><Icon name="pen" size={14}/></button><button onClick={() => handleDeleteInventory(item.id)} className="p-2.5 bg-white border shadow-sm rounded-lg hover:text-rose-500 text-slate-400"><Icon name="trash-can" size={14}/></button></div></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {/* VIEW: CYCLE & INVESTOR */}
+              {view === 'cycle' && (
+                <div className="space-y-6 animate-fade-in">
+                   <div className="flex justify-between items-end"><h2 className="text-2xl font-black">Siklus & Bagi Hasil</h2><button onClick={exportInvestorReport} className="bg-[#4A7B2A] text-white px-5 py-2.5 rounded-2xl font-bold text-xs"><Icon name="download"/> Unduh</button></div>
+                   <div className="flex gap-2 overflow-x-auto border-b pb-1 custom-scrollbar">
+                      <button onClick={() => setCycleTab('rab')} className={`px-6 py-3 text-sm font-bold border-b-2 whitespace-nowrap ${cycleTab === 'rab' ? 'border-[#4A7B2A] text-[#4A7B2A]' : 'border-transparent text-slate-400'}`}>Rencana vs Realisasi</button>
+                      <button onClick={() => setCycleTab('dividen')} className={`px-6 py-3 text-sm font-bold border-b-2 whitespace-nowrap ${cycleTab === 'dividen' ? 'border-[#4A7B2A] text-[#4A7B2A]' : 'border-transparent text-slate-400'}`}>Bagi Hasil (Dividen)</button>
+                   </div>
+
+                   {cycleTab === 'rab' && (
+                     <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
+                        <div className="p-6 md:p-8 border-b bg-slate-50/30 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                           <div><h4 className="font-black text-lg text-slate-900">Anggaran: <span className="text-[#4A7B2A]">{selectedFilter}</span></h4>{cycleStartDate && <span className="text-xs text-slate-500 mt-1 block">Siklus dimulai: <b>{cycleStartDate.toLocaleDateString('id-ID')}</b></span>}</div>
+                           {!selectedFilter.startsWith('INV_') && selectedFilter !== 'Semua' && (
+                             <div className="flex gap-2"><button onClick={handleResetCycle} className="text-xs font-bold px-4 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100">Mulai Siklus Baru</button><button onClick={() => {setTempBudget(budgetPlans[selectedFilter] || {}); setIsBudgetModalOpen(true)}} className="text-xs font-bold px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50">Atur RAB</button></div>
+                           )}
+                        </div>
+                        <div className="overflow-x-auto w-full custom-scrollbar">
+                          <table className="w-full text-left min-w-[500px]">
+                             <thead><tr className="border-b bg-slate-50/50"><th className="p-5 text-xs font-black text-slate-400 uppercase">Kategori Operasional</th><th className="p-5 text-xs font-black text-slate-400 uppercase text-right">Budget (Plan)</th><th className="p-5 text-xs font-black text-slate-400 uppercase text-right">Realisasi (Real)</th><th className="p-5 text-xs font-black text-slate-400 uppercase text-center">Status</th></tr></thead>
+                             <tbody className="divide-y divide-slate-50">
+                                {budgetVsRealData.rows.map(row => (
+                                     <tr key={row.cat} className="hover:bg-slate-50"><td className="p-5 text-sm font-bold text-slate-800">{row.cat}</td><td className="p-5 text-right text-sm text-slate-500">{formatCurrency(row.plan)}</td><td className="p-5 text-right text-base font-black text-slate-900">{formatCurrency(row.real)}</td><td className="p-5 text-center"><span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase ${row.isOver ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>{row.isOver ? 'OVER' : 'AMAN'}</span></td></tr>
+                                ))}
+                                {budgetVsRealData.rows.length > 0 && (
+                                     <tr className="bg-slate-50/50 border-t-2"><td className="p-5 text-sm font-black text-slate-900 uppercase">Total</td><td className="p-5 text-right text-sm font-black text-slate-900">{formatCurrency(budgetVsRealData.totalPlan)}</td><td className="p-5 text-right text-lg font-black text-slate-900">{formatCurrency(budgetVsRealData.totalReal)}</td><td className="p-5 text-center"><span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase ${budgetVsRealData.isTotalOver ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>{budgetVsRealData.isTotalOver ? 'OVERBUDGET' : 'AMAN'}</span></td></tr>
+                                )}
+                             </tbody>
+                          </table>
+                        </div>
+                     </div>
+                   )}
+
+                   {cycleTab === 'dividen' && (
+                     <div className="space-y-6 animate-fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                           <div className="bg-white p-6 rounded-[24px] border shadow-sm"><p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total Laba Dibagikan</p><h3 className={`text-3xl font-black tracking-tight ${dividenData.totalLabaBersih >= 0 ? 'text-slate-900' : 'text-rose-500'}`}>{formatCurrency(dividenData.totalLabaBersih)}</h3></div>
+                           <div className="bg-[#EFFFF0] p-6 rounded-[24px] border border-[#CDEECE] shadow-sm"><p className="text-[10px] font-black text-[#4A7B2A] uppercase mb-1">Hak Pengelola</p><h3 className="text-3xl font-black text-[#4A7B2A] tracking-tight">{formatCurrency(dividenData.totalPengelola)}</h3></div>
+                           <div className="bg-indigo-50 p-6 rounded-[24px] border border-indigo-100 shadow-sm"><p className="text-[10px] font-black text-indigo-600 uppercase mb-1">Hak Investor</p><h3 className="text-3xl font-black text-indigo-600 tracking-tight">{formatCurrency(dividenData.totalInvestor)}</h3></div>
+                        </div>
+
+                        <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden mt-6">
+                           <div className="overflow-x-auto w-full custom-scrollbar">
+                              <table className="w-full text-left min-w-[800px]">
+                                 <thead><tr className="bg-slate-50 border-b"><th className="p-4 text-[10px] font-black text-slate-400 uppercase">Unit</th><th className="p-4 text-[10px] font-black text-slate-400 uppercase text-right">Laba Operasional</th><th className="p-4 text-[10px] font-black text-slate-400 uppercase text-center">Tahan Modal</th><th className="p-4 text-[10px] font-black text-slate-400 uppercase text-right">Laba Dibagi</th><th className="p-4 text-[10px] font-black text-slate-400 uppercase text-right">Manajemen</th><th className="p-4 text-[10px] font-black text-slate-400 uppercase text-right">Investor</th></tr></thead>
+                                 <tbody className="divide-y divide-slate-50">
+                                    {dividenData.breakdownData.map((d, i) => (
+                                       <tr key={i} className="hover:bg-slate-50"><td className="p-4"><div className="font-bold text-slate-900 text-xs">{d.name}</div></td><td className={`p-4 text-right font-bold text-sm ${d.grossNet >= 0 ? 'text-slate-900' : 'text-rose-500'}`}>{formatCurrency(d.grossNet)}</td><td className="p-4 text-center"><input type="number" min="0" className="w-24 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-amber-500/20" value={retainedFunds[d.gh] || ''} onChange={(e) => setRetainedFunds(prev => ({...prev, [d.gh]: e.target.value}))} /></td><td className={`p-4 text-right font-black text-sm ${d.distributableNet >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>{formatCurrency(d.distributableNet)}</td><td className="p-4 text-right font-black text-[#4A7B2A] text-sm">{formatCurrency(d.jatahPengelola)}</td><td className="p-4 text-right font-black text-indigo-600 text-sm">{formatCurrency(d.jatahInvestor)}</td></tr>
+                                    ))}
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                        <div className="flex justify-end mt-6"><button onClick={() => { setPayoutForm(prev => ({...prev, akun: allowedAccounts[0] || ''})); setIsPayoutModalOpen(true); }} className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-xl hover:bg-slate-800 transition-all">Proses & Cairkan Dividen</button></div>
+                     </div>
+                   )}
+                </div>
+              )}
+
+              {/* VIEW: PENGATURAN */}
+              {view === 'settings' && (
+                <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                   <div className="bg-white rounded-[32px] border border-slate-100 p-8 flex items-center justify-between shadow-sm">
+                      <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#EFFFF0] text-[#4A7B2A] rounded-2xl flex items-center justify-center"><Icon name="user-tie" size={24}/></div><div><h2 className="text-xl font-bold text-slate-900">{userName}</h2><p className="text-slate-400 text-sm font-medium uppercase tracking-widest mt-1">{activeUserRole}</p></div></div>
+                      <button onClick={handleLogout} className="px-5 py-3 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 hidden md:block">Keluar Sistem</button>
+                   </div>
+                   
+                   <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                      {[{id: 'gh', label: 'Unit GH', icon: 'seedling'}, {id: 'assets', label: 'Aset', icon: 'tractor'}, {id: 'accounts', label: 'Rekening', icon: 'building-columns'}, {id: 'categories', label: 'Kategori', icon: 'tags'}, {id: 'users', label: 'Pengguna', icon: 'users'}, {id: 'reports', label: 'Laporan', icon: 'file-invoice'}].map(tab => (
+                        <button key={tab.id} onClick={() => setSettingsTab(tab.id)} className={`px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap border ${settingsTab === tab.id ? 'bg-slate-900 text-white shadow-xl' : 'bg-white text-slate-400 hover:bg-slate-50'}`}><Icon name={tab.icon} size={14}/> {tab.label}</button>
+                      ))}
+                   </div>
+
+                   {settingsTab === 'gh' && (
+                      <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50/30"><div><h3 className="font-bold text-slate-900 text-lg">Unit Greenhouse</h3></div><button onClick={() => setGhModal({ isOpen: true, mode: 'add', data: { id: '', name: '', investor: '', porsiPengelola: 30, porsiInvestor: 70 } })} className="bg-[#4A7B2A] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md">Tambah Unit</button></div>
+                        <div className="overflow-x-auto w-full custom-scrollbar"><table className="w-full text-left min-w-[500px]"><tbody className="divide-y divide-slate-50">{(data.ghList || []).map(gh => (<tr key={gh.id} className="hover:bg-slate-50"><td className="p-5 font-bold text-slate-900 text-sm">{gh.id}</td><td className="p-5 text-slate-700 text-sm">{gh.name}</td><td className="p-5"><span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-bold text-[10px] uppercase">{gh.investor}</span></td><td className="p-5 text-center"><button onClick={() => handleEditGH(gh)} className="text-slate-400 hover:text-[#4A7B2A] p-2 bg-white rounded-lg border shadow-sm"><Icon name="pen" size={14} /></button></td></tr>))}</tbody></table></div>
+                      </div>
+                   )}
+                   {settingsTab === 'assets' && (
+                      <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50/30"><div><h3 className="font-bold text-slate-900 text-lg">Aset Tetap</h3></div><div className="flex gap-2"><button onClick={() => { setDepreciationForm(prev => ({...prev, akun: allowedAccounts[0] || ''})); setIsDepreciationModalOpen(true); }} className="bg-amber-100 text-amber-700 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hidden md:block">Potong Penyusutan</button><button onClick={() => setAssetModal({ isOpen: true, mode: 'add', data: { id: '', name: '', price: '', life: 12, gh: 'Pusat', startDate: new Date().toISOString().split('T')[0] } })} className="bg-[#4A7B2A] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md">Tambah Aset</button></div></div>
+                        <div className="overflow-x-auto w-full custom-scrollbar"><table className="w-full text-left min-w-[500px]"><tbody className="divide-y divide-slate-50">{(data.assetList || []).map(ast => { const penyusutan = (parseFloat(ast.price) || 0) / (parseInt(ast.life) || 1); return (<tr key={ast.id} className="hover:bg-slate-50"><td className="p-5"><div className="font-bold text-slate-900 text-sm">{ast.name}</div><div className="text-[10px] text-slate-400 mt-1">{ast.gh}</div></td><td className="p-5 text-right font-bold text-slate-700 text-sm">{formatCurrency(ast.price)}</td><td className="p-5 text-right font-black text-rose-500 text-sm">-{formatCurrency(penyusutan)} / bln</td><td className="p-5 text-center"><button onClick={() => setAssetModal({ isOpen: true, mode: 'edit', data: { ...ast } })} className="text-slate-400 hover:text-[#4A7B2A] p-2 bg-white rounded-lg border shadow-sm"><Icon name="pen" size={14} /></button></td></tr>)})}</tbody></table></div>
+                      </div>
+                   )}
+                   {settingsTab === 'accounts' && (
+                      <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50/30"><div><h3 className="font-bold text-slate-900 text-lg">Rekening & Kas</h3></div><button onClick={() => setAccModal({ isOpen: true, mode: 'add', oldName: '', newName: '' })} className="bg-[#4A7B2A] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md">Tambah Akun</button></div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">{(data.accountList || []).map((acc, i) => (<div key={i} className="border p-5 rounded-[20px] flex justify-between items-center bg-slate-50"><span className="font-bold text-slate-800 text-sm">{acc}</span><div className="flex gap-2"><button onClick={() => handleEditAcc(acc)} className="text-slate-400 hover:text-[#4A7B2A] p-2 bg-white rounded-lg border shadow-sm"><Icon name="pen" size={12} /></button><button onClick={() => handleDeleteAcc(acc)} className="text-slate-400 hover:text-rose-500 p-2 bg-white rounded-lg border shadow-sm"><Icon name="trash-can" size={12} /></button></div></div>))}</div>
+                      </div>
+                   )}
+                   {settingsTab === 'categories' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden"><div className="p-6 border-b flex justify-between items-center bg-rose-50/30"><h3 className="font-bold text-slate-900 text-base text-rose-700">Pengeluaran</h3><button onClick={() => setCatModal({ isOpen: true, mode: 'add', type: 'expense', oldName: '', newName: '' })} className="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-[10px] font-black">+ Tambah</button></div><div className="p-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">{(data.categories?.expense || []).map(cat => (<div key={cat} className="flex justify-between items-center p-3 border rounded-xl bg-slate-50"><span className="font-bold text-xs text-slate-700">{cat}</span><div className="flex gap-1"><button onClick={() => handleEditCat('expense', cat)} className="text-slate-400 p-1.5"><Icon name="pen" size={10}/></button><button onClick={() => handleDeleteCat('expense', cat)} className="text-rose-400 p-1.5"><Icon name="trash-can" size={10}/></button></div></div>))}</div></div>
+                        <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden"><div className="p-6 border-b flex justify-between items-center bg-emerald-50/30"><h3 className="font-bold text-slate-900 text-base text-emerald-700">Pemasukan</h3><button onClick={() => setCatModal({ isOpen: true, mode: 'add', type: 'income', oldName: '', newName: '' })} className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-black">+ Tambah</button></div><div className="p-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">{(data.categories?.income || []).map(cat => (<div key={cat} className="flex justify-between items-center p-3 border rounded-xl bg-slate-50"><span className="font-bold text-xs text-slate-700">{cat}</span><div className="flex gap-1"><button onClick={() => handleEditCat('income', cat)} className="text-slate-400 p-1.5"><Icon name="pen" size={10}/></button><button onClick={() => handleDeleteCat('income', cat)} className="text-rose-400 p-1.5"><Icon name="trash-can" size={10}/></button></div></div>))}</div></div>
+                      </div>
+                   )}
+                   {settingsTab === 'users' && (
+                      <div className="bg-white rounded-[32px] border shadow-sm overflow-hidden">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50/30"><div><h3 className="font-bold text-slate-900 text-lg">Manajemen Pengguna</h3></div><button onClick={() => setUserModal({ isOpen: true, mode: 'add', data: { name: '', email: '', role: 'Pencatat', access: 'Semua Akses', pin: '' } })} className="bg-[#4A7B2A] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-2"><Icon name="user-plus" size={12}/> Undang Tim</button></div>
+                        <div className="overflow-x-auto w-full custom-scrollbar"><table className="w-full text-left min-w-[500px]"><tbody className="divide-y divide-slate-50">{(data.usersList || []).map(u => (<tr key={u.email} className="hover:bg-slate-50"><td className="p-5"><div className="font-bold text-slate-900 text-sm">{u.name}</div><div className="text-xs text-slate-400 mt-1">{u.email}</div></td><td className="p-5"><span className={`px-3 py-1.5 rounded-lg font-black text-[10px] uppercase ${u.role === 'Super Admin' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{u.role}</span></td><td className="p-5 text-center"><div className="flex items-center justify-center gap-2"><button onClick={() => setUserModal({ isOpen: true, mode: 'edit', data: u })} className="text-slate-400 hover:text-[#4A7B2A] p-2 bg-white rounded-lg border shadow-sm"><Icon name="pen" size={14}/></button><button onClick={() => handleDeleteUser(u.email)} className="text-slate-400 hover:text-rose-500 p-2 bg-white rounded-lg border shadow-sm"><Icon name="trash-can" size={14}/></button></div></td></tr>))}</tbody></table></div>
+                      </div>
+                   )}
+                   {settingsTab === 'reports' && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white rounded-[32px] border shadow-sm p-8 flex flex-col justify-between"><div className="w-16 h-16 bg-[#EFFFF0] text-[#4A7B2A] rounded-2xl flex items-center justify-center mb-6"><Icon name="file-invoice" size={24}/></div><h3 className="font-black text-slate-900 text-xl mb-6">Laporan Laba Rugi</h3><button onClick={exportLabaRugi} className="w-full bg-slate-900 text-white font-black py-4 rounded-xl text-sm shadow-md hover:bg-slate-800 transition-all">Unduh Laba Rugi</button></div>
+                        <div className="bg-white rounded-[32px] border shadow-sm p-8 flex flex-col justify-between"><div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6"><Icon name="scale-balanced" size={24}/></div><h3 className="font-black text-slate-900 text-xl mb-6">Neraca Saldo Kas</h3><button onClick={exportNeraca} className="w-full bg-indigo-600 text-white font-black py-4 rounded-xl text-sm shadow-md hover:bg-indigo-700 transition-all">Unduh Neraca</button></div>
+                        <div className="bg-white rounded-[32px] border shadow-sm p-8 flex flex-col justify-between"><div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6"><Icon name="calculator" size={24}/></div><h3 className="font-black text-slate-900 text-xl mb-6">Kalkulator Pajak</h3><button onClick={() => { setTaxForm(prev => ({...prev, akun: allowedAccounts[0] || ''})); setIsTaxModalOpen(true); }} className="w-full bg-amber-500 text-white font-black py-4 rounded-xl text-sm shadow-md hover:bg-amber-600 transition-all">Hitung Pajak</button></div>
+                      </div>
+                   )}
+                </div>
+              )}
             </div>
           </main>
+
+          {/* Nav Mobile */}
+          <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-xl border-t flex justify-between items-center px-4 py-3 z-40 pb-6 rounded-t-[32px] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+             <MobileNavItem active={view === 'dashboard'} onClick={() => setView('dashboard')} icon="border-all" label="Beranda" />
+             <MobileNavItem active={view === 'transactions'} onClick={() => setView('transactions')} icon="list" label="Histori" />
+             <button onClick={() => setIsModalOpen(true)} className="w-14 h-14 bg-[#4A7B2A] text-white rounded-full flex items-center justify-center shadow-xl -mt-10 border-4 border-[#F7F8FA] active:scale-95"><Icon name="plus" size={24}/></button>
+             <MobileNavItem active={view === 'inventory'} onClick={() => setView('inventory')} icon="boxes-stacked" label="Inventori" />
+             <MobileNavItem active={view === 'settings'} onClick={() => setView('settings')} icon="gear" label="Menu" />
+          </nav>
+
+          {/* MODALS */}
+          {/* Modal Input Transaksi */}
+          {isModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+               <form onSubmit={handleSubmitTransaction} className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-6 max-h-[90vh]">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xl md:text-2xl font-black text-slate-900">{formData.id ? 'Edit Aktivitas' : 'Catat Aktivitas'}</h3>
+                    <button type="button" onClick={() => {setIsModalOpen(false); setFormData({...formData, id: null});}} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"><Icon name="xmark" size={16}/></button>
+                  </div>
+                  <div className="flex bg-slate-100 p-1.5 rounded-[24px] border shrink-0">
+                     <button type="button" onClick={() => setFormData({...formData, tipe:'Expense', statusPembayaran: 'Lunas', kategori: (data.categories?.expense || [])[0] || ''})} className={`flex-1 py-3 text-[10px] md:text-xs font-black rounded-[18px] tracking-widest uppercase ${formData.tipe === 'Expense' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-400'}`}>Pengeluaran</button>
+                     <button type="button" onClick={() => setFormData({...formData, tipe:'Income', statusPembayaran: 'Lunas', kategori: (data.categories?.income || [])[0] || ''})} className={`flex-1 py-3 text-[10px] md:text-xs font-black rounded-[18px] tracking-widest uppercase ${formData.tipe === 'Income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`}>Pemasukan</button>
+                  </div>
+                  <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2 pb-2">
+                     <div className="relative">
+                       <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xl md:text-2xl">Rp</span>
+                       <input type="number" required className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-[28px] outline-none text-2xl md:text-3xl font-black focus:ring-4 focus:ring-[#4A7B2A]/10 text-slate-900" placeholder="0" value={formData.jumlah} onChange={e => setFormData({...formData, jumlah: e.target.value})} />
+                     </div>
+                     <div className="flex bg-slate-50 p-1.5 rounded-2xl border">
+                        <button type="button" onClick={() => setFormData({...formData, statusPembayaran: 'Lunas'})} className={`flex-1 py-2 text-[10px] font-black rounded-xl uppercase tracking-widest ${formData.statusPembayaran === 'Lunas' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-200'}`}><Icon name="wallet" size={10} className="mr-1"/> Lunas</button>
+                        <button type="button" onClick={() => setFormData({...formData, statusPembayaran: formData.tipe === 'Expense' ? 'Hutang' : 'Piutang'})} className={`flex-1 py-2 text-[10px] font-black rounded-xl uppercase tracking-widest ${formData.statusPembayaran !== 'Lunas' ? 'bg-indigo-100 text-indigo-600 shadow-sm border-indigo-200' : 'text-slate-400 hover:bg-slate-200'}`}><Icon name="clock-rotate-left" size={10} className="mr-1"/> {formData.tipe === 'Expense' ? 'Hutang' : 'Piutang'}</button>
+                     </div>
+                     <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 block">Tanggal</label>
+                       <input type="date" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={formData.tanggal} onChange={e => setFormData({...formData, tanggal: e.target.value})} />
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 block">Greenhouse</label>
+                          <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={formData.greenhouse} onChange={e => setFormData({...formData, greenhouse: e.target.value})}>
+                            {(data.ghList || []).map(gh => <option key={gh.id} value={gh.id}>{gh.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 block truncate">Akun Kas {formData.statusPembayaran !== 'Lunas' && '(Nanti)'}</label>
+                          <select className={`w-full px-5 py-4 rounded-2xl outline-none font-bold text-sm text-slate-700 ${formData.statusPembayaran !== 'Lunas' ? 'bg-slate-200 text-slate-400 opacity-60' : 'bg-slate-50'}`} value={formData.akun} onChange={e => setFormData({...formData, akun: e.target.value})}>
+                            {allowedAccounts.map(acc => <option key={acc} value={acc}>{acc}</option>)}
+                          </select>
+                        </div>
+                     </div>
+                     <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 block">Kategori</label>
+                       <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={formData.kategori} onChange={e => setFormData({...formData, kategori: e.target.value})}>
+                         {(formData.tipe === 'Income' ? (data.categories?.income || []) : (data.categories?.expense || [])).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                       </select>
+                     </div>
+                     <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 block">Catatan Tambahan (Opsional)</label>
+                       <input type="text" className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300" placeholder="Misal: Beli di Toko Tani A..." value={formData.deskripsi} onChange={e => setFormData({...formData, deskripsi: e.target.value})} />
+                     </div>
+
+                     {!formData.id && (
+                       <div className={`p-5 rounded-[24px] space-y-4 border ${formData.tipe === 'Expense' ? 'bg-amber-50/50 border-amber-100' : 'bg-blue-50/50 border-blue-100'}`}>
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded-md border mt-0.5 flex items-center justify-center ${formData.updateInventory ? (formData.tipe === 'Expense' ? 'bg-[#4A7B2A] border-[#4A7B2A]' : 'bg-blue-600 border-blue-600') : 'bg-white border-slate-300'}`}>
+                              {formData.updateInventory && <Icon name="check" size={10} className="text-white"/>}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.updateInventory} onChange={e => {
+                                const checked = e.target.checked;
+                                setFormData(prev => ({...prev, updateInventory: checked, cart: checked && prev.cart.length === 0 ? [{invId: '', invQty: ''}] : prev.cart}))
+                             }} />
+                            <div>
+                               <span className={`text-xs font-black block ${formData.tipe === 'Expense' ? 'text-amber-900' : 'text-blue-900'}`}>
+                                 {formData.tipe === 'Expense' ? 'Tambah Ke Inventori Stok' : 'Kurangi Dari Inventori Stok'}
+                               </span>
+                               <span className={`text-[10px] font-medium block mt-1 ${formData.tipe === 'Expense' ? 'text-amber-700' : 'text-blue-700'}`}>
+                                 Centang ini jika transaksi berhubungan dengan pembelian atau pemakaian barang material (Bisa multi-item).
+                               </span>
+                            </div>
+                          </label>
+                          
+                          {formData.updateInventory && (
+                            <div className={`pt-4 border-t space-y-3 ${formData.tipe === 'Expense' ? 'border-amber-200' : 'border-blue-200'}`}>
+                              {formData.cart.map((item, index) => (
+                                <div key={index} className="flex gap-2 items-center bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+                                  <select className="flex-1 px-3 py-2 bg-transparent outline-none font-bold text-xs text-slate-700" value={item.invId} onChange={e => {
+                                     const newCart = [...formData.cart]; newCart[index].invId = e.target.value; setFormData({...formData, cart: newCart});
+                                  }}>
+                                     <option value="">-- Pilih Material --</option>
+                                     {(data.inventoryList || []).map(inv => <option key={inv.id} value={inv.id}>{inv.name} ({inv.gh})</option>)}
+                                  </select>
+                                  <div className="w-px h-6 bg-slate-200"></div>
+                                  <input type="number" step="any" className={`w-20 px-2 py-2 bg-transparent outline-none font-black text-sm text-center ${formData.tipe === 'Expense' ? 'text-[#4A7B2A]' : 'text-blue-600'}`} placeholder="Qty" value={item.invQty} onChange={e => {
+                                     const newCart = [...formData.cart]; newCart[index].invQty = e.target.value; setFormData({...formData, cart: newCart});
+                                  }} />
+                                  {formData.cart.length > 1 && (
+                                     <button type="button" onClick={() => {
+                                        const newCart = formData.cart.filter((_, i) => i !== index); setFormData({...formData, cart: newCart});
+                                     }} className="p-2 text-rose-300 hover:text-rose-500 transition-colors"><Icon name="trash-can" size={14}/></button>
+                                  )}
+                                </div>
+                              ))}
+                              <button type="button" onClick={() => setFormData({...formData, cart: [...formData.cart, {invId: '', invQty: ''}]})} className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-dashed ${formData.tipe === 'Expense' ? 'text-amber-700 border-amber-300 hover:bg-amber-100' : 'text-blue-700 border-blue-300 hover:bg-blue-100'}`}>
+                                 <Icon name="plus" size={10}/> Tambah Barang Lainnya
+                              </button>
+                            </div>
+                          )}
+                       </div>
+                     )}
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black shadow-xl shrink-0 mt-2 disabled:opacity-50">
+                    {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'SIMPAN AKTIVITAS'}
+                  </button>
+               </form>
+            </div>
+          )}
+
+          {/* Modal Mutasi Saldo */}
+          {isMutasiModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-6">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-slate-50 rounded-2xl text-slate-700"><Icon name="right-left" size={18}/></div>
+                    <h3 className="text-xl md:text-2xl font-black text-slate-900">Mutasi Kas</h3>
+                  </div>
+                  <button onClick={() => setIsMutasiModalOpen(false)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                </div>
+                
+                <form onSubmit={handleMutasiSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 items-center relative">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Dari Kas</label>
+                      <select className="w-full px-5 py-4 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={mutasiData.dariAkun} onChange={e => setMutasiData({...mutasiData, dariAkun: e.target.value})}>
+                        {allowedAccounts.map(acc => <option key={`dari-${acc}`} value={acc}>{acc}</option>)}
+                      </select>
+                    </div>
+                    <div className="absolute left-1/2 top-[60%] transform -translate-x-1/2 -translate-y-1/2 bg-slate-900 text-white rounded-full p-2 shadow-xl border-4 border-white z-10">
+                      <Icon name="arrow-right" size={12} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-[#A3E635] uppercase tracking-widest ml-2 block">Ke Kas</label>
+                      <select className="w-full px-5 py-4 bg-[#EFFFF0] text-[#4A7B2A] rounded-xl outline-none font-bold text-sm" value={mutasiData.keAkun} onChange={e => setMutasiData({...mutasiData, keAkun: e.target.value})}>
+                        {(data.accountList || []).map(acc => <option key={`ke-${acc}`} value={acc}>{acc}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Jumlah Dipindahkan</label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xl">Rp</span>
+                      <input type="number" required className="w-full pl-14 pr-6 py-5 bg-slate-50 rounded-[24px] outline-none text-2xl font-black text-slate-900" placeholder="0" value={mutasiData.jumlah} onChange={e => setMutasiData({...mutasiData, jumlah: e.target.value})} />
+                    </div>
+                  </div>
+                  <input type="text" className="w-full px-6 py-4 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300" placeholder="Berita Acara (Opsional)..." value={mutasiData.deskripsi} onChange={e => setMutasiData({...mutasiData, deskripsi: e.target.value})} />
+
+                  <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-start gap-3 mt-4">
+                    <div className="bg-amber-100 p-1.5 rounded-full text-amber-600 mt-0.5"><Icon name="circle-info" size={12}/></div>
+                    <p className="text-[10px] text-amber-700 font-bold leading-relaxed">Mutasi ini murni pemindahan saldo fisik antar rekening Anda dan tidak akan dicatat sebagai Pemasukan/Pengeluaran pada Laba Rugi.</p>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black shadow-xl mt-4 disabled:opacity-50">
+                     {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'PROSES MUTASI'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Atur RAB */}
+          {isBudgetModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+               <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-8 flex flex-col max-h-[90vh]">
+                  <div className="flex justify-between items-center mb-6 shrink-0"><h3 className="text-xl font-black text-slate-900">Atur RAB GH</h3><button onClick={() => setIsBudgetModalOpen(false)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button></div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4 py-2">
+                     <p className="text-[10px] text-slate-500 font-bold mb-4 bg-slate-50 p-4 rounded-2xl">Sistem akan membandingkan angka ini dengan realisasi pengeluaran berjalan pada siklus tanam aktif Anda.</p>
+                     {(data.categories?.expense || []).map(cat => (
+                        <div key={cat} className="space-y-1.5">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">{cat}</label>
+                           <div className="relative">
+                              <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">Rp</span>
+                              <input type="number" className="w-full pl-12 pr-6 py-3.5 bg-slate-50 rounded-xl outline-none font-black text-sm focus:ring-2 focus:ring-[#4A7B2A]/20" placeholder="0" value={tempBudget[cat] || ''} onChange={e => setTempBudget({...tempBudget, [cat]: parseFloat(e.target.value) || 0})} />
+                           </div>
+                        </div>
+                      ))}
+                  </div>
+                  <button onClick={handleSaveBudget} disabled={loading} className="w-full bg-[#4A7B2A] text-white py-5 rounded-[24px] font-black shadow-xl mt-6 shrink-0 disabled:opacity-50">
+                    {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'SIMPAN ANGGARAN'}
+                  </button>
+               </div>
+            </div>
+          )}
+
+          {/* Modal Payout Dividen */}
+          {isPayoutModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+               <div className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-6">
+                  <div className="flex justify-between items-start">
+                     <div>
+                       <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4"><Icon name="money-bill-transfer" size={20}/></div>
+                       <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Cairkan Dividen<br/>& Fee Pengelola</h3>
+                     </div>
+                     <button type="button" onClick={() => setIsPayoutModalOpen(false)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                  </div>
+                  
+                  <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex flex-col gap-3">
+                     <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500">Cair ke Investor</span><span className="text-sm font-black text-indigo-600">{formatCurrency(dividenData.totalInvestor)}</span></div>
+                     <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500">Cair ke Pengelola</span><span className="text-sm font-black text-[#4A7B2A]">{formatCurrency(dividenData.totalPengelola)}</span></div>
+                     <div className="border-t border-slate-200 border-dashed my-1"></div>
+                     <div className="flex justify-between items-center"><span className="text-xs font-black uppercase tracking-widest text-slate-900">Total Potong Kas</span><span className="text-lg font-black text-rose-500">-{formatCurrency(dividenData.totalInvestor + dividenData.totalPengelola)}</span></div>
+                  </div>
+
+                  <form onSubmit={handlePayoutSubmit} className="space-y-4">
+                     <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Tanggal Pembayaran</label>
+                        <input type="date" required className="w-full px-5 py-4 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={payoutForm.tanggal} onChange={e => setPayoutForm({...payoutForm, tanggal: e.target.value})} />
+                     </div>
+                     <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Sumber Dana Pengirim</label>
+                        <select className="w-full px-5 py-4 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={payoutForm.akun} onChange={e => setPayoutForm({...payoutForm, akun: e.target.value})}>
+                           {allowedAccounts.map(acc => <option key={acc} value={acc}>{acc}</option>)}
+                        </select>
+                     </div>
+                     <p className="text-[10px] text-slate-500 font-medium px-2 leading-relaxed text-center">
+                        Aksi ini akan mencatat histori <b>Pengeluaran (Distribusi Bagi Hasil)</b> secara otomatis sesuai data kalkulator dan mengurangi saldo rekening Anda.
+                     </p>
+                     <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black shadow-xl mt-2 disabled:opacity-50">
+                       {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'KONFIRMASI CAIRKAN'}
+                     </button>
+                  </form>
+               </div>
+            </div>
+          )}
+          
+          {/* Modal Kalkulator Pajak */}
+          {isTaxModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+               <div className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-6">
+                  <div className="flex justify-between items-start">
+                     <div>
+                       <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center mb-4"><Icon name="calculator" size={20}/></div>
+                       <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Kalkulator<br/>Pajak Usaha</h3>
+                     </div>
+                     <button type="button" onClick={() => setIsTaxModalOpen(false)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                  </div>
+                  
+                  <div className="flex bg-slate-100 p-1.5 rounded-[20px] shrink-0">
+                     <button type="button" onClick={() => setTaxForm({...taxForm, base: 'omzet'})} className={`flex-1 py-3 text-[10px] font-black rounded-[16px] uppercase tracking-widest transition-all ${taxForm.base === 'omzet' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-200'}`}>Omzet (Bruto)</button>
+                     <button type="button" onClick={() => setTaxForm({...taxForm, base: 'laba'})} className={`flex-1 py-3 text-[10px] font-black rounded-[16px] uppercase tracking-widest transition-all ${taxForm.base === 'laba' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-200'}`}>Laba Bersih</button>
+                  </div>
+
+                  <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex flex-col gap-3">
+                     <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500">Dasar ({filterMonth} {filterYear})</span>
+                        <span className="text-sm font-black text-slate-900">{formatCurrency(taxForm.base === 'omzet' ? currentSummary.income : Math.max(0, labaBersih))}</span>
+                     </div>
+                     <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500">Tarif Pajak PPh (%)</span>
+                        <div className="relative w-24">
+                           <input type="number" step="any" min="0" max="100" className="w-full pr-6 pl-3 py-2 bg-white border border-slate-200 rounded-lg text-right font-black text-[#4A7B2A] text-sm focus:outline-none focus:border-[#4A7B2A]" value={taxForm.rate} onChange={(e) => setTaxForm({...taxForm, rate: parseFloat(e.target.value) || 0})} />
+                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                        </div>
+                     </div>
+                     <div className="border-t border-slate-200 border-dashed my-1"></div>
+                     <div className="flex justify-between items-end">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Pajak</span>
+                        <span className="text-2xl font-black text-rose-500">
+                           {formatCurrency((taxForm.base === 'omzet' ? currentSummary.income : Math.max(0, labaBersih)) * (taxForm.rate / 100))}
+                        </span>
+                     </div>
+                  </div>
+
+                  <form onSubmit={handlePayTaxSubmit} className="space-y-4">
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Tgl Bayar</label>
+                           <input type="date" required className="w-full px-4 py-3.5 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={taxForm.tanggal} onChange={e => setTaxForm({...taxForm, tanggal: e.target.value})} />
+                        </div>
+                        <div className="space-y-1.5">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Bayar Dari</label>
+                           <select className="w-full px-4 py-3.5 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={taxForm.akun} onChange={e => setTaxForm({...taxForm, akun: e.target.value})}>
+                              {allowedAccounts.map(acc => <option key={acc} value={acc}>{acc}</option>)}
+                           </select>
+                        </div>
+                     </div>
+                     <button type="submit" disabled={loading || (taxForm.base === 'omzet' ? currentSummary.income : Math.max(0, labaBersih)) * (taxForm.rate / 100) <= 0} className="w-full bg-amber-500 hover:bg-amber-600 text-white py-5 rounded-[24px] font-black shadow-xl mt-2 disabled:opacity-50 transition-all">
+                       {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'CATAT PEMBAYARAN'}
+                     </button>
+                  </form>
+               </div>
+            </div>
+          )}
+
+          {/* Modal Master GH */}
+          {ghModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-slate-900">{ghModal.mode === 'edit' ? 'Edit' : 'Tambah'} Unit GH</h3>
+                  <button onClick={() => setGhModal({...ghModal, isOpen: false})} className="text-slate-400 bg-slate-50 p-2 rounded-full hover:text-rose-500"><Icon name="xmark" size={16} /></button>
+                </div>
+                <form onSubmit={handleSaveGH} className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Kode ID (Misal: GH 6)</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={ghModal.data.id} onChange={e => setGhModal({...ghModal, data: {...ghModal.data, id: e.target.value}})} disabled={ghModal.mode === 'edit'} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Unit Bisnis</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={ghModal.data.name} onChange={e => setGhModal({...ghModal, data: {...ghModal.data, name: e.target.value}})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Investor</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={ghModal.data.investor} onChange={e => setGhModal({...ghModal, data: {...ghModal.data, investor: e.target.value}})} />
+                  </div>
+                  <div className="bg-[#EFFFF0] p-4 rounded-2xl border border-[#CDEECE] mt-2 space-y-4">
+                     <label className="text-[10px] font-black text-[#4A7B2A] uppercase tracking-widest block text-center">Skema Bagi Hasil (%)</label>
+                     <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Pengelola</label>
+                          <input type="number" required min="0" max="100" className="w-full px-4 py-3 bg-white rounded-xl outline-none text-sm font-black text-[#4A7B2A] text-center shadow-sm" value={ghModal.data.porsiPengelola} onChange={e => setGhModal({...ghModal, data: {...ghModal.data, porsiPengelola: e.target.value}})} />
+                        </div>
+                        <span className="font-black text-slate-400 mt-4">:</span>
+                        <div className="flex-1">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Investor</label>
+                          <input type="number" required min="0" max="100" className="w-full px-4 py-3 bg-white rounded-xl outline-none text-sm font-black text-indigo-600 text-center shadow-sm" value={ghModal.data.porsiInvestor} onChange={e => setGhModal({...ghModal, data: {...ghModal.data, porsiInvestor: e.target.value}})} />
+                        </div>
+                     </div>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black mt-2 disabled:opacity-50">
+                    {loading ? <Icon name="spinner" className="fa-spin" /> : 'SIMPAN DATA GH'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Akun Kas */}
+          {accModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-slate-900">{accModal.mode === 'edit' ? 'Edit' : 'Tambah'} Akun Kas</h3>
+                  <button onClick={() => setAccModal({...accModal, isOpen: false})} className="text-slate-400 bg-slate-50 p-2 rounded-full hover:text-rose-500"><Icon name="xmark" size={16} /></button>
+                </div>
+                <form onSubmit={handleSaveAcc} className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Akun/Kas</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={accModal.newName} onChange={e => setAccModal({...accModal, newName: e.target.value})} />
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black mt-2 disabled:opacity-50">
+                    {loading ? <Icon name="spinner" className="fa-spin" /> : 'SIMPAN AKUN KAS'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Kategori */}
+          {catModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-slate-900">{catModal.mode === 'edit' ? 'Edit' : 'Tambah'} Kategori</h3>
+                  <button onClick={() => setCatModal({...catModal, isOpen: false})} className="text-slate-400 bg-slate-50 p-2 rounded-full hover:text-rose-500"><Icon name="xmark" size={16} /></button>
+                </div>
+                <form onSubmit={handleSaveCat} className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Kategori</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={catModal.newName} onChange={e => setCatModal({...catModal, newName: e.target.value})} />
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black mt-2 disabled:opacity-50">
+                    {loading ? <Icon name="spinner" className="fa-spin" /> : 'SIMPAN KATEGORI'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Add/Edit Inventori */}
+          {invModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <form onSubmit={handleSaveInventory} className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-5">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">{invModal.mode === 'edit' ? 'Edit Data Barang' : 'Tambah Barang Baru'}</h3>
+                  <button type="button" onClick={() => setInvModal({...invModal, isOpen: false})} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                </div>
+                
+                <div className="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Nama Barang</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" placeholder="Cth: Pupuk Kalsium" value={invModal.data.name} onChange={e => setInvModal({...invModal, data: {...invModal.data, name: e.target.value}})} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Kategori</label>
+                    <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={invModal.data.category} onChange={e => setInvModal({...invModal, data: {...invModal.data, category: e.target.value}})}>
+                      <option value="Pupuk/Nutrisi">Pupuk/Nutrisi</option><option value="Benih">Benih</option><option value="Pestisida">Pestisida</option><option value="Alat/Hardware">Alat / Perangkat</option><option value="Kemasan/Packaging">Kemasan</option><option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-[#A3E635] uppercase tracking-widest ml-2 block">Jumlah Qty</label>
+                      <input type="number" required step="any" className="w-full px-5 py-4 bg-[#EFFFF0] text-[#4A7B2A] rounded-2xl outline-none font-black text-lg text-center shadow-sm" placeholder="0" value={invModal.data.qty} onChange={e => setInvModal({...invModal, data: {...invModal.data, qty: e.target.value}})} disabled={invModal.mode === 'edit'} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Satuan</label>
+                      <input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700 text-center" placeholder="Kg, Liter, Sak..." value={invModal.data.unit} onChange={e => setInvModal({...invModal, data: {...invModal.data, unit: e.target.value}})} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Lokasi Penyimpanan / GH</label>
+                    <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={invModal.data.gh} onChange={e => setInvModal({...invModal, data: {...invModal.data, gh: e.target.value}})}>
+                      {(data.ghList || []).map(gh => <option key={gh.id} value={gh.id}>{gh.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black shadow-xl mt-2 disabled:opacity-50">
+                  {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'SIMPAN STOK'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Modal Pemakaian Stok Fisik */}
+          {useInvModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <form onSubmit={handleUseInventorySubmit} className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-sm shadow-2xl overflow-hidden p-8 flex flex-col space-y-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4"><Icon name="boxes-stacked" size={20}/></div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Pakai Stok<br/>{useInvModal.name}</h3>
+                  </div>
+                  <button type="button" onClick={() => setUseInvModal({...useInvModal, isOpen: false})} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                </div>
+                
+                <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex justify-between items-center">
+                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sisa Saat Ini:</span>
+                   <span className="text-lg font-black text-slate-900">{useInvModal.currentQty} <span className="text-xs text-slate-400">{useInvModal.unit}</span></span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-4 block">Jumlah Dipakai</label>
+                  <div className="relative">
+                     <input type="number" required step="any" max={useInvModal.currentQty} className="w-full pr-16 pl-6 py-5 bg-blue-50 border border-blue-100 text-blue-700 rounded-[24px] outline-none font-black text-2xl focus:ring-4 focus:ring-blue-500/20 shadow-inner" placeholder="0" value={useInvModal.usedQty} onChange={e => setUseInvModal({...useInvModal, usedQty: e.target.value})} />
+                     <span className="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-blue-400 text-sm">{useInvModal.unit}</span>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 text-white py-5 rounded-[24px] font-black shadow-xl shadow-blue-500/20 mt-2 disabled:opacity-50 transition-all">
+                  {loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'KONFIRMASI PEMAKAIAN'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Modal Aset Tetap */}
+          {assetModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <form onSubmit={handleSaveAsset} className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-8 flex flex-col space-y-5">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">{assetModal.mode === 'edit' ? 'Edit Data Aset' : 'Tambah Aset Baru'}</h3>
+                  <button type="button" onClick={() => setAssetModal({...assetModal, isOpen: false})} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                </div>
+                <div className="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
+                  <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Nama Infrastruktur / Aset</label><input type="text" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" placeholder="Cth: Pompa Air 120W" value={assetModal.data.name} onChange={e => setAssetModal({...assetModal, data: {...assetModal.data, name: e.target.value}})} /></div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black text-[#A3E635] uppercase tracking-widest ml-2 block">Harga Beli Awal (Rp)</label><input type="number" required step="any" className="w-full px-5 py-4 bg-[#EFFFF0] text-[#4A7B2A] rounded-2xl outline-none font-black text-lg" placeholder="0" value={assetModal.data.price} onChange={e => setAssetModal({...assetModal, data: {...assetModal.data, price: e.target.value}})} /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Umur (Bulan)</label><input type="number" required min="1" className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700 text-center" placeholder="12" value={assetModal.data.life} onChange={e => setAssetModal({...assetModal, data: {...assetModal.data, life: e.target.value}})} /></div>
+                    <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Tgl Pembelian</label><input type="date" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={assetModal.data.startDate} onChange={e => setAssetModal({...assetModal, data: {...assetModal.data, startDate: e.target.value}})} /></div>
+                  </div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Lokasi Instalasi Aset</label><select className="w-full px-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-sm text-slate-700" value={assetModal.data.gh} onChange={e => setAssetModal({...assetModal, data: {...assetModal.data, gh: e.target.value}})}>{(data.ghList || []).map(gh => <option key={gh.id} value={gh.id}>{gh.name}</option>)}</select></div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black shadow-xl mt-2 disabled:opacity-50">{loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'SIMPAN ASET'}</button>
+              </form>
+            </div>
+          )}
+
+          {/* Modal Catat Penyusutan Bulanan */}
+          {isDepreciationModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+               <div className="bg-white rounded-t-[40px] md:rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-6">
+                  <div className="flex justify-between items-start">
+                     <div><div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4"><Icon name="tractor" size={20}/></div><h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Potong Dana<br/>Penyusutan</h3></div>
+                     <button type="button" onClick={() => setIsDepreciationModalOpen(false)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500"><Icon name="xmark" size={16}/></button>
+                  </div>
+                  <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex flex-col gap-2">
+                     <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500">Aset Aktif Terhitung</span><span className="text-sm font-black text-slate-800">{(data.assetList || []).length} Aset Tetap</span></div>
+                     <div className="border-t border-slate-200 border-dashed my-1"></div>
+                     <div className="flex justify-between items-center"><span className="text-xs font-black uppercase tracking-widest text-slate-900">Total Potong Kas</span><span className="text-lg font-black text-rose-500">-{formatCurrency(totalDepreciation)}</span></div>
+                  </div>
+                  <form onSubmit={handleDepreciationSubmit} className="space-y-4">
+                     <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Tanggal Pembukuan</label><input type="date" required className="w-full px-5 py-4 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={depreciationForm.tanggal} onChange={e => setDepreciationForm({...depreciationForm, tanggal: e.target.value})} /></div>
+                     <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 block">Potong Dari Kas</label><select className="w-full px-5 py-4 bg-slate-50 rounded-xl outline-none font-bold text-sm text-slate-700" value={depreciationForm.akun} onChange={e => setDepreciationForm({...depreciationForm, akun: e.target.value})}>{allowedAccounts.map(acc => <option key={acc} value={acc}>{acc}</option>)}</select></div>
+                     <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">Aksi ini akan mencatat histori <b>Pengeluaran (Penyusutan Aset)</b>. Anda harus memindahkan uang ini secara fisik ke rekening brankas / dana cadangan Anda.</p>
+                     <button type="submit" disabled={loading || totalDepreciation <= 0} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black shadow-xl mt-4 disabled:opacity-50">{loading ? <Icon name="spinner" className="fa-spin" size={16}/> : 'CATAT PENGELUARAN'}</button>
+                  </form>
+               </div>
+            </div>
+          )}
+
+          {/* Modal Undang Pengguna Baru */}
+          {userModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-slate-900">{userModal.mode === 'edit' ? 'Edit Pengguna' : 'Undang Anggota Tim'}</h3>
+                  <button onClick={() => setUserModal({...userModal, isOpen: false})} className="text-slate-400 bg-slate-50 p-2 rounded-full hover:text-rose-500"><Icon name="xmark" size={16} /></button>
+                </div>
+                <form onSubmit={handleSaveUser} className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Lengkap</label>
+                    <input type="text" required className="w-full px-5 py-3.5 bg-slate-50 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={userModal.data.name} onChange={e => setUserModal({...userModal, data: {...userModal.data, name: e.target.value}})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Email (ID Login)</label>
+                    <input type="email" required className="w-full px-5 py-3.5 bg-slate-50 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20" value={userModal.data.email} onChange={e => setUserModal({...userModal, data: {...userModal.data, email: e.target.value}})} disabled={userModal.mode === 'edit'} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Peran Sistem</label>
+                      <select className="w-full px-5 py-3.5 bg-slate-50 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20 cursor-pointer" value={userModal.data.role} onChange={e => setUserModal({...userModal, data: {...userModal.data, role: e.target.value}})}>
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Pencatat">Pencatat (Staf)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">PIN Keamanan</label>
+                      <input type="password" required className="w-full px-5 py-3.5 bg-slate-50 rounded-xl outline-none text-sm font-black text-center tracking-[0.3em] focus:ring-2 focus:ring-[#4A7B2A]/20" placeholder="••••" value={userModal.data.pin} onChange={e => setUserModal({...userModal, data: {...userModal.data, pin: e.target.value}})} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Batas Hak Akses Rekening / Kas</label>
+                    <select className="w-full px-5 py-3.5 bg-slate-50 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-[#4A7B2A]/20 cursor-pointer" value={userModal.data.access} onChange={e => setUserModal({...userModal, data: {...userModal.data, access: e.target.value}})}>
+                      <option value="Semua Akses">-- Izinkan Semua Kas --</option>
+                      {(data.accountList || []).map(acc => <option key={acc} value={acc}>Hanya {acc}</option>)}
+                    </select>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-[#4A7B2A] text-white py-4 rounded-2xl font-black mt-2 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md">
+                    {loading ? <Icon name="spinner" className="fa-spin" /> : <><Icon name="user-check"/> SIMPAN PENGGUNA</>}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
         </div>
       );
     };
