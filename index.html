@@ -70,30 +70,43 @@
     // --- KONFIGURASI PENTING (GANTI URL INI DENGAN URL DEPLOY APLIKASI WEB ANDA) ---
     const API_URL = "https://script.google.com/macros/s/AKfycby31hlY2MtwAnX4ZHhawX7gFA6HsXkfRnChoMVjF5av6fpkwrHXUhFf8woHBrc3IaY3aw/exec";
 
-    // Fungsi Fetch Custom untuk bypass CORS dan komunikasi JSON dengan Apps Script
-    const apiCall = async (action, payload = null) => {
-      try {
-        let url = `${API_URL}?action=${action}`;
-        const options = {
-          redirect: "follow",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-        };
+    // ZettBOT: Fungsi Fetch yang kebal CORS untuk Google Apps Script
+      const apiCall = async (action, payload = null) => {
+        // Selalu sisipkan action di URL (Query Parameter)
+        const url = `${API_URL}?action=${action}`;
         
-        if (payload) {
-          options.method = "POST";
-          options.body = JSON.stringify(payload);
-        } else {
-          options.method = "GET";
+        try {
+          let response;
+          if (payload) {
+            // Jika ada payload (Simpan/Edit/Hapus), gunakan POST
+            response = await fetch(url, {
+              method: 'POST',
+              // PENTING: Gunakan text/plain agar tidak memicu pemblokiran CORS (Preflight OPTIONS) dari Google
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload),
+              redirect: 'follow' // Wajib untuk mengikuti redirect dari script.google.com ke script.googleusercontent.com
+            });
+          } else {
+            // Jika tidak ada payload (Ambil data saat Login), gunakan GET
+            response = await fetch(url, {
+              method: 'GET',
+              redirect: 'follow'
+            });
+          }
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          return data;
+          
+        } catch (error) {
+          console.error(`API Call Error (${action}):`, error);
+          // Mengembalikan format error agar bisa dibaca oleh UI (sehingga loading berhenti)
+          return { error: error.message }; 
         }
-        
-        const response = await fetch(url, options);
-        const result = await response.json();
-        return result;
-      } catch (error) {
-        console.error("API Error:", error);
-        throw error;
-      }
-    };
+      };
 
     const Icon = ({ name, size = 16, className = '' }) => (
       <i className={`fa-solid fa-${name} ${className}`} style={{ fontSize: size }}></i>
