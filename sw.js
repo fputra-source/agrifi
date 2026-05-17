@@ -1,5 +1,5 @@
-const CACHE_NAME = 'agrifi-v1';
-const ASSETS = [
+const CACHE_NAME = 'agrifi-pwa-cache-v1';
+const urlsToCache = [
   './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
@@ -10,42 +10,62 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
+self.addEventListener('fetch', event => {
+  // Hanya intercept GET request (Biarkan POST / API call ke backend pass-through)
+  if (event.request.method !== 'GET' || event.request.url.includes('script.google.com')) {
+    return;
+  }
+  
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Cache hit - kembalikan response dari cache
+        if (response) {
+          return response;
+        }
+        return fetch(event.request).then(
+          function(response) {
+            // Cek validitas response
+            if(!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            var responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then(function(cache) {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          }
+        );
+      })
+  );
+});
+
+// Bersihkan cache lama jika versi berubah
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (e) => {
-  // Hanya cache request GET dari static origin, request POST ke API langsung dialihkan ke network
-  if (e.request.method !== 'GET' || e.request.url.includes('script.google.com')) {
-    return fetch(e.request);
-  }
-  e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-      return fetch(e.request).then((networkResponse) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, networkResponse.clone());
-          return networkResponse;
-        });
-      });
     })
   );
 });
