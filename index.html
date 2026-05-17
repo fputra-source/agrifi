@@ -46,7 +46,7 @@
 
     const App = () => {
       // ⚠️ MASUKKAN URL API (DO-POST) GAS ANDA DI BAWAH INI:
-      const API_URL = "https://script.google.com/macros/s/AKfycbzXuy_Y5rqBnfJPPjpkzfOoKMF-nSmmXi1JbH6ti80iLRHYlKqswg33GS5lbsrShTlQrQ/exec";
+      const API_URL = "https://script.google.com/macros/s/AKfycbxj-8c1xVB5kN-z6yO9yXZQq96mJQbEoHLdeO7F3Hc-joAK63khQ7Uj7f5lcZ5vfM4fXg/exec";
 
       const [view, setView] = useState('dashboard');
       const [settingsTab, setSettingsTab] = useState('gh');
@@ -94,26 +94,38 @@
       const formatCurrency = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
 
       const apiCall = async (action, payloadData = null) => {
+        if (!API_URL || API_URL === "MASUKKAN_URL_WEB_APP_GAS_DI_SINI") {
+          alert("URL API Belum Diatur!"); return { success: false };
+        }
         try {
-          const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payloadData }) });
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            // Wajib text/plain agar Google tidak memblokir request kita dari GitHub
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: action, data: payloadData }),
+            redirect: "follow"
+          });
           return await response.json();
-        } catch (e) { return { success: false, message: e.toString() }; }
+        } catch (e) {
+          console.error("REST API Error:", e);
+          return { success: false, message: e.toString() };
+        }
       };
 
       const fetchData = async () => {
-        if (!API_URL.includes('script.google.com')) return;
         setLoading(true);
         try {
-          const response = await fetch(API_URL);
-          const res = await response.json();
-          setData(prev => ({ ...prev, ...res }));
-          if (res.categories && res.accountList && res.ghList) {
-             setFormData(prev => ({ ...prev, kategori: (res.categories.expense || [])[0] || '', akun: (res.accountList || [])[0] || '', greenhouse: (res.ghList || [])[0]?.id || '' }));
-             setMutasiData(prev => ({ ...prev, dariAkun: (res.accountList || [])[0] || '', keAkun: (res.accountList || [])[1] || (res.accountList || [])[0] || '' }));
-             setInvModal(prev => ({ ...prev, data: { ...prev.data, gh: (res.ghList || [])[0]?.id || 'Pusat' } }));
+          // Kita pakai apiCall (POST) untuk menarik data juga!
+          const res = await apiCall('getData');
+          if(res && res.categories) {
+            setData(prev => ({ ...prev, ...res }));
+            setupDefaults(res);
+          } else {
+             console.error("Data kosong/gagal ditarik dari server", res);
           }
-          if (res.budgetPlans) setBudgetPlans(res.budgetPlans);
-        } catch (error) { console.error("API Error", error); }
+        } catch (error) { 
+          console.error("Gagal menarik data dari API:", error); 
+        }
         setLoading(false);
       };
 
