@@ -245,10 +245,23 @@
       const handleLogin = (e) => {
         e.preventDefault();
         setLoading(true);
+        setLoginError('');
+        
+        // 1. ZettBOT: Cek apakah URL API sudah diganti
+        if (API_URL === "URL_APPS_SCRIPT_ANDA_DISINI") {
+           setLoginError('⚠️ KONFIGURASI ERROR: Anda belum memasukkan URL Web App Apps Script di baris 81 index.html.');
+           setLoading(false);
+           return;
+        }
         
         // Autentikasi pertama kali memaksa fetch list user jika belum ada
         if (data.usersList.length === 0) {
            apiCall('getFinancialData').then(res => {
+              if (res.error) {
+                 setLoginError('Error dari Server: ' + res.error);
+                 setLoading(false);
+                 return;
+              }
               const user = (res.usersList || []).find(u => u.email.toLowerCase() === loginForm.email.toLowerCase());
               if (user && (loginForm.password === '1234' || loginForm.password === '5678' || loginForm.password === user.pin)) {
                 setData(res);
@@ -258,6 +271,11 @@
               } else {
                 setLoginError('Identitas atau PIN salah!');
               }
+              setLoading(false);
+           }).catch(err => {
+              // 2. ZettBOT: Menangkap error jaringan/CORS agar loading berhenti
+              console.error("Login Fetch Error:", err);
+              setLoginError('Gagal terhubung ke Server. Pastikan URL Apps Script benar dan akses Deployment diset ke "Siapa Saja".');
               setLoading(false);
            });
         } else {
