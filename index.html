@@ -80,8 +80,9 @@
       }
     };
     
-    const Icon = ({ name, size = 16, className = '' }) => (
-      <i className={`fa-solid fa-${name} ${className}`} style={{ fontSize: size }}></i>
+    // ZettBOT: Menambahkan "...props" agar ikon bisa menerima perintah onClick dan title
+    const Icon = ({ name, size = 16, className = '', ...props }) => (
+      <i className={`fa-solid fa-${name} ${className}`} style={{ fontSize: size }} {...props}></i>
     );
 
     const App = () => {
