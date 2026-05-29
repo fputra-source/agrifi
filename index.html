@@ -54,7 +54,7 @@
     // =====================================================================
     // ⚠️ WAJIB DIUBAH: TEMPEL URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
     // =====================================================================
-    const API_URL = "https://script.google.com/macros/s/AKfycby31hlY2MtwAnX4ZHhawX7gFA6HsXkfRnChoMVjF5av6fpkwrHXUhFf8woHBrc3IaY3aw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbx0u-wigyKlYXjMiB93Yh1_aRjxuczcu2ILjVMilyqG1_zFWtFZnq4jEAQF4FRljkF_Sw/exec";
 
     // ZettBOT: Mesin Fetch API (Pengganti google.script.run)
     const apiCall = async (action, payload = null) => {
@@ -149,7 +149,7 @@
       const [retainedFunds, setRetainedFunds] = useState({}); 
 
       const [formData, setFormData] = useState({
-        id: null, tanggal: new Date().toISOString().split('T')[0], kategori: '', deskripsi: '', tipe: 'Expense', jumlah: '', akun: '', greenhouse: '', statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '' }]
+        id: null, tanggal: new Date().toISOString().split('T')[0], kategori: '', deskripsi: '', tipe: 'Expense', jumlah: '', akun: '', greenhouse: '', statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '', invPrice: '' }]
       });
       
       const [mutasiData, setMutasiData] = useState({ dariAkun: '', keAkun: '', jumlah: '', deskripsi: '' });
@@ -292,6 +292,36 @@
         }
       };
 
+      // ZettBOT: Helper Keranjang Transaksi Otomatis (Auto-Calculate)
+      const updateCartItem = (index, field, value) => {
+          const newCart = [...formData.cart];
+          newCart[index][field] = value;
+          
+          let total = 0;
+          newCart.forEach(c => {
+             total += (parseFloat(c.invQty) || 0) * (parseFloat(c.invPrice) || 0);
+          });
+          
+          setFormData(prev => ({
+              ...prev, 
+              cart: newCart, 
+              jumlah: total > 0 ? total : prev.jumlah // Kalkulasi otomatis total nominal
+          }));
+      };
+
+      const removeCartItem = (index) => {
+          const newCart = formData.cart.filter((_, i) => i !== index);
+          let total = 0;
+          newCart.forEach(c => {
+             total += (parseFloat(c.invQty) || 0) * (parseFloat(c.invPrice) || 0);
+          });
+          setFormData(prev => ({
+              ...prev, 
+              cart: newCart,
+              jumlah: total > 0 ? total : prev.jumlah
+          }));
+      };
+
       // --- ZETTBOT: Konversi Action API ke Fetch (Optimistic Sync) ---
       const handleSubmitTransaction = async (e) => {
         e.preventDefault();
@@ -317,7 +347,7 @@
               deskripsi: '', tipe: 'Expense', jumlah: '',
               akun: (data.accountList || [])[0] || 'BCA Perusahaan',
               greenhouse: (data.ghList || [])[0]?.id || 'Pusat',
-              statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '' }]
+              statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '', invPrice: '' }]
         });
 
         const res = await apiCall('saveTransaction', payload);
@@ -334,7 +364,8 @@
             id: t.id, tanggal: t.tanggalRaw || new Date().toISOString().split('T')[0],
             kategori: t.kategori, deskripsi: t.deskripsi, tipe: t.tipe, jumlah: t.jumlah,
             akun: t.akun, greenhouse: t.greenhouse, statusPembayaran: t.status || 'Lunas',
-            updateInventory: false, cart: [{ invId: '', invQty: '' }]
+            updateInventory: t.detailKeranjang && t.detailKeranjang.length > 0 ? true : false, 
+            cart: t.detailKeranjang && t.detailKeranjang.length > 0 ? t.detailKeranjang : [{ invId: '', invQty: '', invPrice: '' }]
          });
          setIsModalOpen(true);
       };
@@ -547,6 +578,101 @@
       };
 
       const formatCurrency = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
+
+      // --- FITUR BARU: CETAK INVOICE ---
+      const handlePrintInvoice = (t) => {
+         const printWindow = window.open('', '', 'width=900,height=700');
+         
+         let itemsHtml = '';
+         if (t.detailKeranjang && Array.isArray(t.detailKeranjang) && t.detailKeranjang.length > 0) {
+             t.detailKeranjang.forEach((item, idx) => {
+                 const invItem = (data.inventoryList || []).find(i => i.id === item.invId) || { name: 'Item Inventori (Dihapus/Tidak Diketahui)', unit: 'Unit' };
+                 const price = parseFloat(item.invPrice) || 0;
+                 const qty = parseFloat(item.invQty) || 0;
+                 const subtotal = price > 0 ? (price * qty) : null;
+                 
+                 itemsHtml += `<tr>
+                     <td>
+                        <b>${invItem.name}</b>
+                        ${price > 0 ? `<br><span style="font-size:10px; color:#64748b;">Harga Satuan: @ ${formatCurrency(price)}</span>` : ''}
+                     </td>
+                     <td class="text-center">${item.invQty} <span style="font-size:10px;">${invItem.unit}</span></td>
+                     <td class="text-right font-bold">${subtotal ? formatCurrency(subtotal) : (idx === t.detailKeranjang.length - 1 ? formatCurrency(t.jumlah) : '-')}</td>
+                 </tr>`;
+             });
+         } else {
+             itemsHtml += `<tr>
+                 <td><b>${t.deskripsi || t.kategori}</b></td>
+                 <td class="text-center">1 Ls</td>
+                 <td class="text-right">${formatCurrency(t.jumlah)}</td>
+             </tr>`;
+         }
+
+         let html = `<html><head><title>Invoice - ${t.id}</title>`;
+         html += `<style>
+             body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; line-height: 1.5; }
+             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #4A7B2A; padding-bottom: 20px; margin-bottom: 30px; }
+             .header-left h1 { margin: 0; color: #4A7B2A; font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+             .header-left p { margin: 5px 0 0 0; color: #64748b; font-size: 14px; }
+             .header-right { text-align: right; }
+             .header-right h2 { margin: 0; color: #0f172a; font-size: 28px; letter-spacing: 2px; }
+             .info-box { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+             .info-item p { margin: 0 0 5px 0; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+             .info-item h4 { margin: 0; color: #0f172a; font-size: 16px; font-weight: 700; }
+             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+             th, td { padding: 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+             th { background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+             .text-right { text-align: right; }
+             .text-center { text-align: center; }
+             .total-row td { font-weight: 900; font-size: 18px; color: #0f172a; border-bottom: none; border-top: 2px solid #cbd5e1; }
+             .footer { text-align: center; margin-top: 50px; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; padding-top: 20px; }
+         </style></head><body>`;
+
+         html += `<div class="header">
+             <div class="header-left">
+                 <h1>Agrifi.</h1>
+                 <p>Sistem Manajemen Greenhouse</p>
+                 <p>Unit: <b>${t.greenhouse || 'Pusat'}</b></p>
+             </div>
+             <div class="header-right">
+                 <h2>INVOICE</h2>
+                 <p style="margin-top: 5px; color: #64748b; font-weight: bold;">#INV-${(t.id || '000').substring(0,8).toUpperCase()}</p>
+             </div>
+         </div>`;
+
+         html += `<div class="info-box">
+             <div class="info-item"><p>Tanggal Transaksi</p><h4>${t.tanggalFormatted}</h4></div>
+             <div class="info-item"><p>Jenis / Kategori</p><h4>${t.kategori}</h4></div>
+             <div class="info-item"><p>Status</p><h4 style="color: ${t.status === 'Lunas' ? '#10b981' : '#f59e0b'};">${t.status}</h4></div>
+         </div>`;
+
+         html += `<table>
+             <thead>
+                 <tr>
+                     <th>Deskripsi / Nama Item</th>
+                     <th class="text-center">Qty</th>
+                     <th class="text-right">Subtotal (IDR)</th>
+                 </tr>
+             </thead>
+             <tbody>
+                 ${itemsHtml}
+                 <tr class="total-row">
+                     <td colspan="2" class="text-right">GRAND TOTAL</td>
+                     <td class="text-right" style="color: #4A7B2A;">${formatCurrency(t.jumlah)}</td>
+                 </tr>
+             </tbody>
+         </table>`;
+
+         html += `<div class="footer">
+             <p>Terima kasih atas kepercayaan Anda berbisnis dengan kami.</p>
+             <p style="font-size: 12px; margin-top: 10px;">Dicetak oleh: ${data.currentUser} | Dicetak pada: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}</p>
+         </div>`;
+
+         html += `</body><script>window.onload = function() { window.print(); window.onafterprint = function(){ window.close(); } }<\/script></html>`;
+
+         printWindow.document.write(html);
+         printWindow.document.close();
+      };
 
       const dividenData = useMemo(() => {
          let baseTxs = data.transactions || []; 
@@ -1527,6 +1653,7 @@
                                  {/* Bagian Nominal & Tombol Aksi Mobile */}
                                  <div className="md:col-span-3 flex justify-between md:justify-end items-center mt-2 md:mt-0 pt-3 md:pt-0 border-t border-slate-50 md:border-t-0">
                                     <div className="flex items-center gap-2 md:hidden">
+                                       <button onClick={() => handlePrintInvoice(t)} className="p-2 text-slate-400 hover:text-indigo-500 bg-slate-50 rounded-lg border border-slate-100" title="Cetak Invoice"><Icon name="print" size={12}/></button>
                                        <button onClick={() => handleEditTransaction(t)} className="p-2 text-slate-400 hover:text-[#4A7B2A] bg-slate-50 rounded-lg border border-slate-100" title="Edit Transaksi"><Icon name="pen" size={12}/></button>
                                        <button onClick={() => handleDeleteTransaction(t.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-slate-50 rounded-lg border border-slate-100" title="Hapus"><Icon name="trash-can" size={12}/></button>
                                     </div>
@@ -1538,6 +1665,7 @@
                                  {/* Bagian Tombol Aksi Desktop */}
                                  <div className="hidden md:flex md:col-span-1 items-center justify-center">
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                       <button onClick={() => handlePrintInvoice(t)} className="p-2 text-slate-300 hover:text-indigo-500 bg-white rounded-lg border border-slate-200 shadow-sm" title="Cetak Invoice"><Icon name="print" size={14}/></button>
                                        <button onClick={() => handleEditTransaction(t)} className="p-2 text-slate-300 hover:text-[#4A7B2A] bg-white rounded-lg border border-slate-200 shadow-sm" title="Edit Transaksi"><Icon name="pen" size={14}/></button>
                                        <button onClick={() => handleDeleteTransaction(t.id)} className="p-2 text-slate-300 hover:text-rose-500 bg-white rounded-lg border border-slate-200 shadow-sm" title="Hapus"><Icon name="trash-can" size={14}/></button>
                                     </div>
@@ -2279,26 +2407,30 @@
                           {formData.updateInventory && (
                             <div className={`pt-4 border-t animate-fade-in space-y-3 ${formData.tipe === 'Expense' ? 'border-amber-200/50' : 'border-blue-200/50'}`}>
                               {formData.cart.map((item, index) => (
-                                <div key={index} className="flex gap-2 items-center bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                                  <select className="flex-1 px-3 py-2 bg-transparent border-none outline-none font-bold text-xs text-slate-700" value={item.invId} onChange={e => {
-                                     const newCart = [...formData.cart]; newCart[index].invId = e.target.value; setFormData({...formData, cart: newCart});
-                                  }}>
-                                     <option value="">-- Material --</option>
-                                     {(data.inventoryList || []).map(inv => <option key={inv.id} value={inv.id}>{inv.name} ({inv.gh})</option>)}
-                                  </select>
-                                  <div className="w-px h-6 bg-slate-200"></div>
-                                  <input type="number" step="any" className={`w-20 px-2 py-2 bg-transparent border-none outline-none font-black text-sm text-center ${formData.tipe === 'Expense' ? 'text-[#4A7B2A]' : 'text-blue-600'}`} placeholder="Qty" value={item.invQty} onChange={e => {
-                                     const newCart = [...formData.cart]; newCart[index].invQty = e.target.value; setFormData({...formData, cart: newCart});
-                                  }} />
-                                  {formData.cart.length > 1 && (
-                                     <button type="button" onClick={() => {
-                                        const newCart = formData.cart.filter((_, i) => i !== index); setFormData({...formData, cart: newCart});
-                                     }} className="p-2 text-slate-300 hover:text-rose-500 transition-colors"><Icon name="trash-can" size={14}/></button>
-                                  )}
+                                <div key={index} className="flex flex-col gap-2 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                                  <div className="flex justify-between items-center gap-2">
+                                     <select className="flex-1 px-3 py-2 bg-slate-50 border-none rounded-xl outline-none font-bold text-xs text-slate-700" value={item.invId} onChange={e => updateCartItem(index, 'invId', e.target.value)}>
+                                        <option value="">-- Pilih Material/Barang --</option>
+                                        {(data.inventoryList || []).map(inv => <option key={inv.id} value={inv.id}>{inv.name} ({inv.gh})</option>)}
+                                     </select>
+                                     {formData.cart.length > 1 && (
+                                        <button type="button" onClick={() => removeCartItem(index)} className="p-2 text-rose-400 hover:text-rose-600 bg-rose-50 rounded-xl transition-colors"><Icon name="trash-can" size={14}/></button>
+                                     )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                     <div className="flex-1 relative">
+                                        <input type="number" step="any" className={`w-full pl-3 pr-2 py-2 bg-slate-50 border-none rounded-xl outline-none font-black text-sm ${formData.tipe === 'Expense' ? 'text-[#4A7B2A]' : 'text-blue-600'}`} placeholder="Qty" value={item.invQty} onChange={e => updateCartItem(index, 'invQty', e.target.value)} />
+                                     </div>
+                                     <span className="text-slate-300 font-bold text-xs">x</span>
+                                     <div className="flex-[2] relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                                        <input type="number" step="any" className="w-full pl-8 pr-3 py-2 bg-slate-50 border-none rounded-xl outline-none font-black text-sm text-slate-700" placeholder="Harga Satuan" value={item.invPrice || ''} onChange={e => updateCartItem(index, 'invPrice', e.target.value)} />
+                                     </div>
+                                  </div>
                                 </div>
                               ))}
-                              <button type="button" onClick={() => setFormData({...formData, cart: [...formData.cart, {invId: '', invQty: ''}]})} className={`w-full py-2.5 rounded-xl text-xs font-bold border border-dashed transition-all ${formData.tipe === 'Expense' ? 'text-amber-700 border-amber-300 hover:bg-amber-100' : 'text-blue-700 border-blue-300 hover:bg-blue-100'}`}>
-                                 <Icon name="plus" size={10} className="mr-1"/> Tambah Material Lainnya
+                              <button type="button" onClick={() => setFormData({...formData, cart: [...formData.cart, {invId: '', invQty: '', invPrice: ''}]})} className={`w-full py-2.5 rounded-xl text-xs font-bold border border-dashed transition-all ${formData.tipe === 'Expense' ? 'text-amber-700 border-amber-300 hover:bg-amber-100' : 'text-blue-700 border-blue-300 hover:bg-blue-100'}`}>
+                                 <Icon name="plus" size={10} className="mr-1"/> Tambah Material/Barang Lainnya
                               </button>
                             </div>
                           )}
