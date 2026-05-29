@@ -308,7 +308,8 @@
               greenhouse: (data.ghList || [])[0]?.id || 'Pusat',
               statusPembayaran: 'Lunas', updateInventory: false, cart: [{ invId: '', invQty: '' }]
            });
-           fetchData(); 
+           setLoading(false);
+           fetchData(true); 
         } else {
            alert('Gagal: ' + (res.message || res.error));
            setLoading(false);
@@ -329,7 +330,8 @@
         if (!window.confirm('Hapus transaksi ini?')) return;
         setLoading(true);
         await apiCall('deleteTransaction', { id });
-        fetchData();
+        setLoading(false);
+        fetchData(true);
       };
 
       const handleResetCycle = async () => {
@@ -348,7 +350,9 @@
 
         const res = await apiCall('saveTransaction', txData);
         if (res.success) {
-           alert('Siklus Baru Dimulai!'); fetchData();
+           alert('Siklus Baru Dimulai!'); 
+           setLoading(false);
+           fetchData(true);
         } else {
            alert('Gagal: ' + (res.message || res.error)); setLoading(false);
         }
@@ -372,7 +376,9 @@
         setLoading(true);
         const res = await apiCall('saveBudgetPlan', { ghId: selectedFilter, budgetObj: tempBudget });
         if (res.success) {
-           setIsBudgetModalOpen(false); fetchData();
+           setIsBudgetModalOpen(false); 
+           setLoading(false);
+           fetchData(true);
         } else {
            alert('Gagal: ' + (res.message || res.error)); setLoading(false);
         }
@@ -384,7 +390,8 @@
         const res = await apiCall('saveInventory', { data: invModal.data, mode: invModal.mode });
         if (res.success) {
            setInvModal({ isOpen: false, mode: 'add', data: { id: '', name: '', category: 'Pupuk/Nutrisi', qty: '', unit: 'Liter', gh: (data.ghList || [])[0]?.id || 'Pusat' } });
-           fetchData();
+           setLoading(false);
+           fetchData(true);
         } else {
            alert('Gagal: ' + (res.message || res.error)); setLoading(false);
         }
@@ -394,7 +401,8 @@
         if (!window.confirm(`Yakin ingin menghapus item stok ini?`)) return;
         setLoading(true);
         await apiCall('deleteInventory', { id });
-        fetchData();
+        setLoading(false);
+        fetchData(true);
       };
 
       const handleUseInventorySubmit = async (e) => {
@@ -407,7 +415,8 @@
         const res = await apiCall('deductInventory', { id: useInvModal.id, usedQty: used });
         if (res.success) {
            setUseInvModal({ isOpen: false, id: '', name: '', currentQty: 0, unit: '', usedQty: '' });
-           fetchData();
+           setLoading(false);
+           fetchData(true);
         } else {
            alert('Gagal: ' + (res.message || res.error)); setLoading(false);
         }
@@ -416,7 +425,10 @@
       const handleEditGH = (gh) => { setGhModal({ isOpen: true, mode: 'edit', data: { ...gh } }); };
       const handleDeleteGH = async (id) => {
         if (!window.confirm(`Yakin ingin menghapus unit Greenhouse dengan ID: ${id}?`)) return;
-        setLoading(true); await apiCall('deleteMasterGH', { id }); fetchData();
+        setLoading(true); 
+        await apiCall('deleteMasterGH', { id }); 
+        setLoading(false);
+        fetchData(true);
       };
       const handleSaveGH = async (e) => {
         e.preventDefault();
@@ -425,59 +437,86 @@
         if (pPeng + pInv !== 100) { alert('Total Persentase Bagi Hasil harus tepat 100%!'); return; }
         setLoading(true);
         const res = await apiCall('saveMasterGH', { data: ghModal.data, mode: ghModal.mode });
-        if (res.success) { setGhModal({isOpen: false, mode: 'add', data: {id: '', name: '', investor: '', porsiPengelola: 30, porsiInvestor: 70}}); fetchData(); }
-        else { alert('Gagal'); setLoading(false); }
+        if (res.success) { 
+           setGhModal({isOpen: false, mode: 'add', data: {id: '', name: '', investor: '', porsiPengelola: 30, porsiInvestor: 70}}); 
+           setLoading(false);
+           fetchData(true); 
+        } else { alert('Gagal'); setLoading(false); }
       };
 
       const handleEditAcc = (acc) => { setAccModal({ isOpen: true, mode: 'edit', oldName: acc, newName: acc }); };
       const handleDeleteAcc = async (accName) => {
         if (!window.confirm(`Yakin ingin menghapus akun kas: ${accName}?`)) return;
-        setLoading(true); await apiCall('deleteMasterAcc', { name: accName }); fetchData();
+        setLoading(true); 
+        await apiCall('deleteMasterAcc', { name: accName }); 
+        setLoading(false);
+        fetchData(true);
       };
       const handleSaveAcc = async (e) => {
         e.preventDefault();
         setLoading(true);
         const res = await apiCall('saveMasterAcc', { oldName: accModal.oldName, newName: accModal.newName, mode: accModal.mode });
-        if (res.success) { setAccModal({isOpen: false, mode: 'add', oldName: '', newName: ''}); fetchData(); }
-        else { alert('Gagal'); setLoading(false); }
+        if (res.success) { 
+           setAccModal({isOpen: false, mode: 'add', oldName: '', newName: ''}); 
+           setLoading(false);
+           fetchData(true); 
+        } else { alert('Gagal'); setLoading(false); }
       };
 
       const handleEditCat = (type, cat) => { setCatModal({ isOpen: true, mode: 'edit', type, oldName: cat, newName: cat }); };
       const handleDeleteCat = async (type, catName) => {
         if (!window.confirm(`Yakin ingin menghapus kategori: ${catName}?`)) return;
-        setLoading(true); await apiCall('deleteMasterCat', { type, name: catName }); fetchData();
+        setLoading(true); 
+        await apiCall('deleteMasterCat', { type, name: catName }); 
+        setLoading(false);
+        fetchData(true);
       };
       const handleSaveCat = async (e) => {
         e.preventDefault();
         setLoading(true);
         const res = await apiCall('saveMasterCat', { type: catModal.type, oldName: catModal.oldName, newName: catModal.newName, mode: catModal.mode });
-        if (res.success) { setCatModal({ isOpen: false, mode: 'add', type: 'expense', oldName: '', newName: '' }); fetchData(); }
-        else { alert('Gagal'); setLoading(false); }
+        if (res.success) { 
+           setCatModal({ isOpen: false, mode: 'add', type: 'expense', oldName: '', newName: '' }); 
+           setLoading(false);
+           fetchData(true); 
+        } else { alert('Gagal'); setLoading(false); }
       };
 
       const handleSaveUser = async (e) => {
         e.preventDefault();
         setLoading(true);
         const res = await apiCall('saveMasterUser', { userData: userModal.data, mode: userModal.mode });
-        if (res.success) { setUserModal({...userModal, isOpen: false}); fetchData(); }
-        else { alert('Gagal: ' + res.message); setLoading(false); }
+        if (res.success) { 
+           setUserModal({...userModal, isOpen: false}); 
+           setLoading(false);
+           fetchData(true); 
+        } else { alert('Gagal: ' + res.message); setLoading(false); }
       };
       const handleDeleteUser = async (email) => {
         if (email === data.currentUser) { alert('Anda tidak bisa menghapus diri sendiri!'); return; }
         if (!window.confirm(`Hapus pengguna ${email}?`)) return;
-        setLoading(true); await apiCall('deleteMasterUser', { email }); fetchData();
+        setLoading(true); 
+        await apiCall('deleteMasterUser', { email }); 
+        setLoading(false);
+        fetchData(true);
       };
 
       const handleSaveAsset = async (e) => {
         e.preventDefault();
         setLoading(true);
         const res = await apiCall('saveMasterAsset', { data: assetModal.data, mode: assetModal.mode });
-        if (res.success) { setAssetModal({...assetModal, isOpen: false}); fetchData(); }
-        else { alert('Gagal: ' + (res.message || '')); setLoading(false); }
+        if (res.success) { 
+           setAssetModal({...assetModal, isOpen: false}); 
+           setLoading(false);
+           fetchData(true); 
+        } else { alert('Gagal: ' + (res.message || '')); setLoading(false); }
       };
       const handleDeleteAsset = async (id) => {
         if (!window.confirm(`Yakin ingin menghapus data aset ini?`)) return;
-        setLoading(true); await apiCall('deleteMasterAsset', { id }); fetchData();
+        setLoading(true); 
+        await apiCall('deleteMasterAsset', { id }); 
+        setLoading(false);
+        fetchData(true);
       };
 
       const handleDepreciationSubmit = async (e) => {
@@ -495,7 +534,10 @@
          
          const res = await apiCall('saveTransaction', txData);
          if (res.success) {
-            setIsDepreciationModalOpen(false); alert('Berhasil dicatat!'); fetchData();
+            setIsDepreciationModalOpen(false); 
+            alert('Berhasil dicatat!'); 
+            setLoading(false);
+            fetchData(true);
          } else {
             alert('Gagal: ' + (res.message || res.error)); setLoading(false);
          }
@@ -792,7 +834,10 @@
          setLoading(true);
          const res = await apiCall('processDividenPayout', { payouts: dividenData.breakdownData, akun: payoutForm.akun, tanggal: payoutForm.tanggal });
          if (res.success) {
-            setIsPayoutModalOpen(false); alert('Berhasil dicatat!'); fetchData();
+            setIsPayoutModalOpen(false); 
+            alert('Berhasil dicatat!'); 
+            setLoading(false);
+            fetchData(true);
          } else {
             alert('Gagal: ' + (res.message || res.error)); setLoading(false);
          }
@@ -829,7 +874,10 @@
          
          const res = await apiCall('saveTransaction', txData);
          if (res.success) {
-            setIsTaxModalOpen(false); alert('Berhasil dicatat!'); fetchData();
+            setIsTaxModalOpen(false); 
+            alert('Berhasil dicatat!'); 
+            setLoading(false);
+            fetchData(true);
          } else {
             alert('Gagal: ' + (res.message || res.error)); setLoading(false);
          }
