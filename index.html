@@ -128,6 +128,14 @@
         isOpen: false, id: '', name: '', currentQty: 0, unit: '', usedQty: '' 
       });
 
+      // ZettBOT: State untuk Modal Cetak PDF Custom
+      const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+      const [printConfig, setPrintConfig] = useState({
+        mode: 'default', // 'default' (bulan berjalan) atau 'custom'
+        startDate: new Date(todayDate.getFullYear(), todayDate.getMonth(), 1).toISOString().split('T')[0], // Awal bulan ini
+        endDate: new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).toISOString().split('T')[0] // Akhir bulan ini
+      });
+
       const [loginForm, setLoginForm] = useState({ email: 'admin@melonfarm.co.id', password: '' });
       const [loginError, setLoginError] = useState('');
       
@@ -594,6 +602,13 @@
          return { breakdownData, totalPemasukan, totalPengeluaran, totalLabaKotor, totalDitahan, totalLabaBersih, totalPengelola, totalInvestor };
       }, [selectedFilter, filterMonth, filterYear, data.transactions, data.ghList, retainedFunds]); 
 
+      // ZettBOT: Helper function untuk memastikan format tanggal ke Date object
+      const parseDate = (dateStr) => {
+         const d = new Date(dateStr);
+         d.setHours(0, 0, 0, 0); // Hilangkan jam agar perbandingan adil
+         return d;
+      };
+
       const filteredTransactions = useMemo(() => {
         let baseTxs = data.transactions || []; 
         if (selectedFilter !== 'Semua') {
@@ -604,9 +619,18 @@
             baseTxs = baseTxs.filter(t => t.greenhouse === selectedFilter);
           }
         }
-        return baseTxs.filter(t => {
+        
+        // Filter berdasarkan bulan/tahun (Dashboard Default)
+        const filtered = baseTxs.filter(t => {
           if (!t.tanggalFormatted) return true;
           return t.tanggalFormatted.includes(filterMonth) && t.tanggalFormatted.includes(filterYear);
+        });
+
+        // Mengurutkan secara descending (Terbaru di atas) berdasarkan tanggal asli
+        return filtered.sort((a, b) => {
+           const dateA = new Date(a.tanggalRaw || a.tanggalFormatted);
+           const dateB = new Date(b.tanggalRaw || b.tanggalFormatted);
+           return dateB - dateA; 
         });
       }, [selectedFilter, data.transactions, filterMonth, filterYear, data.ghList]);
 
@@ -815,6 +839,131 @@
 
          printWindow.document.write(html);
          printWindow.document.close();
+      };
+
+      // ZETTBOT FIX: Update Fitur Cetak Transaksi ke PDF dengan Filter Periode Custom
+      const handlePrintTransaksi = () => {
+         let printTxs = data.transactions || []; 
+         
+         // 1. Filter Lokasi
+         if (selectedFilter !== 'Semua') {
+            if (selectedFilter.startsWith('INV_')) {
+               const invName = selectedFilter.replace('INV_', '');
+               printTxs = printTxs.filter(t => (data.ghList || []).find(g => g.id === t.greenhouse)?.investor === invName);
+            } else {
+               printTxs = printTxs.filter(t => t.greenhouse === selectedFilter);
+            }
+         }
+
+         let periodeStr = "";
+         let totalPemasukanPeriode = 0;
+         let totalPengeluaranPeriode = 0;
+
+         // 2. Filter Periode (Default Bulan Ini vs Custom)
+         if (printConfig.mode === 'custom') {
+            const startD = parseDate(printConfig.startDate);
+            const endD = parseDate(printConfig.endDate);
+            endD.setHours(23, 59, 59, 999); // Pastikan sampai ujung hari terakhir
+
+            printTxs = printTxs.filter(t => {
+               if (!t.tanggalRaw) return false;
+               const txDate = new Date(t.tanggalRaw);
+               return txDate >= startD && txDate <= endD;
+            });
+            
+            periodeStr = `${startD.toLocaleDateString('id-ID')} s/d ${endD.toLocaleDateString('id-ID')}`;
+         } else {
+            // Default: Ikuti filter dropdown bulan & tahun di atas
+            printTxs = printTxs.filter(t => t.tanggalFormatted && t.tanggalFormatted.includes(filterMonth) && t.tanggalFormatted.includes(filterYear));
+            periodeStr = `${filterMonth} ${filterYear}`;
+         }
+
+         // 3. Urutkan dari terlama ke terbaru untuk Laporan (Ascending)
+         printTxs.sort((a, b) => new Date(a.tanggalRaw || a.tanggalFormatted) - new Date(b.tanggalRaw || b.tanggalFormatted));
+
+         // 4. Kalkulasi Total Periode
+         printTxs.forEach(t => {
+            if (t.status !== 'Hutang' && t.status !== 'Piutang' && t.tipe !== 'System') {
+               const amt = parseFloat(t.jumlah) || 0;
+               if (t.tipe === 'Income') totalPemasukanPeriode += amt;
+               else if (t.tipe === 'Expense') totalPengeluaranPeriode += amt;
+            }
+         });
+         
+         const netSaldoPeriode = totalPemasukanPeriode - totalPengeluaranPeriode;
+
+         if (printTxs.length === 0) {
+            alert(`Tidak ada data transaksi di lokasi ${selectedFilter} pada periode ${periodeStr}.`); 
+            setIsPrintModalOpen(false);
+            return;
+         }
+         
+         const printWindow = window.open('', '', 'width=900,height=700');
+         let html = `<html><head><title>Buku Transaksi - ${selectedFilter}</title>`;
+         html += `<style>
+            body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding:40px; color:#1e293b;} 
+            table{width:100%; border-collapse:collapse; margin-top:20px; font-size:12px;} 
+            th,td{border-bottom:1px solid #e2e8f0; padding:10px; text-align:left;} 
+            th{background:#f8fafc; font-weight:700; text-transform:uppercase; font-size:10px; letter-spacing:0.05em; border-top:1px solid #e2e8f0;} 
+            .text-right{text-align:right;} .text-center{text-align:center;} 
+            .header{text-align:center; margin-bottom:30px; border-bottom:2px solid #4A7B2A; padding-bottom:15px;} 
+            .header h2{margin:0; font-size:22px; color:#4A7B2A; text-transform:uppercase; letter-spacing:1px;} 
+            .header p{margin:5px 0; font-size: 12px;}
+            .summary{display:flex; justify-content:space-between; margin-bottom:20px; background:#f1f5f9; padding:15px; border-radius:8px; border:1px solid #e2e8f0; font-size: 12px; gap: 15px;} 
+            .summary div{flex:1; padding: 10px; background: white; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);} .summary p{margin:4px 0; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px;} 
+            .summary h4{margin: 0; font-size: 18px; font-weight: 900;}
+            .badge{display:inline-block; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:bold; background:#e2e8f0; color:#64748b; text-transform:uppercase;}
+         </style></head><body>`;
+         
+         html += `<div class="header">
+            <h2>BUKU HISTORI TRANSAKSI</h2>
+            <p><b>Filter Lokasi:</b> ${selectedFilter} | <b>Periode:</b> ${periodeStr}</p>
+            <p style="color:#64748b;">Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')} | User: ${data.currentUser}</p>
+         </div>`;
+
+         html += `<div class="summary">
+            <div>
+               <p>Total Pemasukan Periode Ini</p>
+               <h4 style="color:#10b981;">${formatCurrency(totalPemasukanPeriode)}</h4>
+            </div>
+            <div>
+               <p>Total Pengeluaran Periode Ini</p>
+               <h4 style="color:#ef4444;">${formatCurrency(totalPengeluaranPeriode)}</h4>
+            </div>
+            <div>
+               <p>Sisa Saldo Kas Periode</p>
+               <h4 style="color:${netSaldoPeriode >= 0 ? '#4A7B2A' : '#f59e0b'};">${netSaldoPeriode >= 0 ? '+' : ''}${formatCurrency(netSaldoPeriode)}</h4>
+            </div>
+         </div>`;
+
+         html += `<table><thead><tr>
+            <th width="15%">Tanggal</th>
+            <th width="35%">Kategori & Keterangan</th>
+            <th width="15%">Lokasi</th>
+            <th width="15%">Akun Kas</th>
+            <th width="20%" class="text-right">Nominal (Rp)</th>
+         </tr></thead><tbody>`;
+
+         printTxs.forEach(t => {
+            const isIncome = t.tipe === 'Income';
+            const colorClass = isIncome ? 'color:#10b981;' : (t.tipe === 'System' ? 'color:#94a3b8;' : 'color:#0f172a;');
+            const sign = isIncome ? '+' : (t.tipe === 'System' ? '' : '-');
+            
+            html += `<tr>
+               <td>${t.tanggalFormatted}</td>
+               <td><b>${t.kategori}</b><br><span style="color:#64748b; font-size:10px;">${t.deskripsi || '-'}</span></td>
+               <td><span class="badge">${t.greenhouse || 'Pusat'}</span></td>
+               <td style="font-size:10px; color:#64748b;">${t.akun}</td>
+               <td class="text-right font-bold" style="font-weight:bold; ${colorClass}">${sign}${formatCurrency(t.jumlah)}</td>
+            </tr>`;
+         });
+
+         html += `</tbody></table>`;
+         html += `</body><script>window.onload = function() { window.print(); window.onafterprint = function(){ window.close(); } }<\/script></html>`;
+
+         printWindow.document.write(html);
+         printWindow.document.close();
+         setIsPrintModalOpen(false); // Tutup modal setelah cetak
       };
 
       const handlePayoutSubmit = async (e) => {
@@ -1334,7 +1483,10 @@
                         <h2 className="text-2xl font-black">Histori Transaksi</h2>
                         <p className="text-slate-400 text-sm font-medium">Menampilkan data untuk {selectedFilter}</p>
                       </div>
-                      <button onClick={exportToCSV} className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4A7B2A] shadow-sm" title="Export Data"><Icon name="download" size={20}/></button>
+                      <div className="flex gap-2">
+                        <button onClick={exportToCSV} className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4A7B2A] shadow-sm" title="Export Data CSV"><Icon name="file-csv" size={16}/></button>
+                        <button onClick={() => setIsPrintModalOpen(true)} className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-slate-600 hover:text-[#4A7B2A] shadow-sm font-bold text-xs flex items-center gap-2 transition-colors" title="Cetak ke Laporan PDF"><Icon name="print" size={16}/> <span className="hidden md:inline">Cetak Laporan</span></button>
+                      </div>
                    </div>
                    <div className="bg-white md:rounded-[32px] rounded-2xl md:border border-slate-100 md:shadow-sm overflow-hidden">
                       {/* ZETTBOT FIX: Tampilan Card untuk Mobile, Tabel untuk Desktop */}
@@ -2011,6 +2163,50 @@
           </nav>
 
           {/* --- MODALS RENDER --- */}
+
+          {/* Modal Konfigurasi Cetak Laporan (ZettBOT) */}
+          {isPrintModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+               <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden p-8 flex flex-col space-y-6 animate-in zoom-in-95 duration-300">
+                  <div className="flex justify-between items-center">
+                     <div>
+                       <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center mb-4"><Icon name="print" size={20}/></div>
+                       <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Konfigurasi<br/>Cetak Laporan PDF</h3>
+                     </div>
+                     <button type="button" onClick={() => setIsPrintModalOpen(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-colors"><Icon name="xmark" size={16}/></button>
+                  </div>
+                  
+                  <div className="flex bg-slate-50 p-1.5 rounded-[20px] border border-slate-100 shrink-0">
+                     <button type="button" onClick={() => setPrintConfig({...printConfig, mode: 'default'})} className={`flex-1 py-3 text-[10px] font-black rounded-2xl transition-all uppercase tracking-widest ${printConfig.mode === 'default' ? 'bg-[#4A7B2A] text-white shadow-md' : 'text-slate-400 hover:bg-slate-200'}`}>Bulan Filter</button>
+                     <button type="button" onClick={() => setPrintConfig({...printConfig, mode: 'custom'})} className={`flex-1 py-3 text-[10px] font-black rounded-2xl transition-all uppercase tracking-widest ${printConfig.mode === 'custom' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-200'}`}>Tanggal Custom</button>
+                  </div>
+
+                  {printConfig.mode === 'default' ? (
+                     <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-100 flex flex-col items-center justify-center py-8">
+                        <Icon name="calendar-check" size={32} className="text-[#4A7B2A] mb-3 opacity-50" />
+                        <p className="text-sm font-bold text-slate-600 text-center">Cetak berdasarkan filter saat ini:</p>
+                        <h4 className="text-lg font-black text-[#4A7B2A] mt-1">{filterMonth} {filterYear}</h4>
+                        <p className="text-[10px] text-slate-400 mt-2 text-center">Data akan diurutkan dari tanggal terlama ke terbaru.</p>
+                     </div>
+                  ) : (
+                     <div className="bg-indigo-50 p-5 rounded-[24px] border border-indigo-100 flex flex-col gap-4">
+                        <div className="space-y-1.5">
+                           <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-2 block">Dari Tanggal</label>
+                           <input type="date" required className="w-full px-4 py-3 bg-white border-none rounded-xl outline-none font-bold text-sm text-slate-600 focus:ring-4 focus:ring-indigo-500/10 cursor-pointer shadow-sm" value={printConfig.startDate} onChange={e => setPrintConfig({...printConfig, startDate: e.target.value})} />
+                        </div>
+                        <div className="space-y-1.5">
+                           <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-2 block">Sampai Tanggal</label>
+                           <input type="date" required className="w-full px-4 py-3 bg-white border-none rounded-xl outline-none font-bold text-sm text-slate-600 focus:ring-4 focus:ring-indigo-500/10 cursor-pointer shadow-sm" value={printConfig.endDate} onChange={e => setPrintConfig({...printConfig, endDate: e.target.value})} />
+                        </div>
+                     </div>
+                  )}
+
+                  <button type="button" onClick={handlePrintTransaksi} className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-[24px] font-black shadow-xl shadow-slate-900/20 active:scale-95 transition-all text-sm tracking-widest uppercase mt-2 flex items-center justify-center gap-2">
+                     <Icon name="print" size={16}/> PROSES CETAK
+                  </button>
+               </div>
+            </div>
+          )}
 
           {isModalOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
