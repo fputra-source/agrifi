@@ -15,7 +15,9 @@
   
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- ZETTBOT FIX: Mengunci versi Babel ke 7.23.6 untuk mencegah Error ES Module di iFrame Google Apps Script -->
+  <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'" />
 
@@ -48,7 +50,11 @@
 
   <div id="root"></div>
 
-  <script type="text/babel">
+  <!-- ZETTBOT FIX: Menambahkan data-type dan Pragma untuk memaksa Babel mem-parsing ini sebagai Script Biasa (Classic Runtime) -->
+  <script type="text/babel" data-presets="react,env" data-type="text/javascript">
+    /** @jsx React.createElement */
+    /** @jsxFrag React.Fragment */
+    
     const { useState, useEffect, useRef, useMemo } = React;
 
     // =====================================================================
@@ -289,8 +295,8 @@
 
       // ZettBOT: Helper Keranjang Transaksi Otomatis (Auto-Calculate)
       const updateCartItem = (index, field, value) => {
-          const newCart = [...formData.cart];
-          newCart[index][field] = value;
+          // ZETTBOT FIX: Hindari mutasi langsung pada array of objects (Mencegah State Freeze)
+          const newCart = formData.cart.map((c, i) => i === index ? { ...c, [field]: value } : c);
           
           let total = 0;
           newCart.forEach(c => {
@@ -321,27 +327,26 @@
       const handleSubmitTransaction = async (e) => {
         e.preventDefault();
         
-        if (!formData.id && formData.updateInventory) {
-          const validCart = formData.cart.filter(item => item.invId && item.invQty);
-          if (validCart.length === 0) {
+        let validCart = formData.cart;
+        if (formData.updateInventory) {
+          validCart = formData.cart.filter(item => item.invId && item.invQty);
+          // ZETTBOT FIX: Validasi tanpa merubah state asli formData
+          if (!formData.id && validCart.length === 0 && !formData.requireInvoice) {
              alert('Mohon pilih setidaknya satu barang dan isi jumlah Qty.');
              return;
           }
-          formData.cart = validCart; 
         }
 
-        // Simpan requireInvoice ke dalam detailKeranjang sebagai metadata jika tidak ada cart
-        let payload = { ...formData };
-        if (formData.requireInvoice && (!formData.updateInventory || formData.cart.length === 0)) {
+        // ZETTBOT FIX: Gunakan let payload untuk mencegah mutasi state form yang sedang aktif
+        let payload = { ...formData, cart: validCart };
+        
+        if (payload.requireInvoice && (!payload.updateInventory || payload.cart.length === 0)) {
            // Hack: Simpan requireInvoice di cart string yang kosong agar dikenali di backend saat dibaca
-           // Tapi karena Google Script membaca cart sebagai JSON array, kita sisipkan flag
-           payload.cart = [{ invId: '_INVOICE_FLAG_', invQty: 1, invPrice: formData.jumlah }];
+           payload.cart = [{ invId: '_INVOICE_FLAG_', invQty: 1, invPrice: payload.jumlah }];
            payload.updateInventory = true; // Paksa agar tersimpan di kolom cart
-        } else if (formData.requireInvoice && formData.updateInventory) {
-           // Tandai cart agar tau bahwa ini invoice
-           payload.cart.push({ invId: '_INVOICE_FLAG_', invQty: 1, invPrice: 0 });
+        } else if (payload.requireInvoice && payload.updateInventory) {
+           payload.cart = [...payload.cart, { invId: '_INVOICE_FLAG_', invQty: 1, invPrice: 0 }];
         }
-
 
         // SAT SET: Tutup modal seketika dan jalankan loading background!
         setIsModalOpen(false); 
@@ -371,9 +376,15 @@
          let isInvoice = false;
          let cartData = [{ invId: '', invQty: '', invPrice: '' }];
          
-         if (t.detailKeranjang && Array.isArray(t.detailKeranjang) && t.detailKeranjang.length > 0) {
-            cartData = t.detailKeranjang.filter(item => item.invId !== '_INVOICE_FLAG_');
-            isInvoice = t.detailKeranjang.some(item => item.invId === '_INVOICE_FLAG_');
+         // ZETTBOT FIX: Parsing String JSON ke Object Array (Mencegah TypeError)
+         let detailArr = t.detailKeranjang;
+         if (typeof detailArr === 'string') {
+            try { detailArr = JSON.parse(detailArr); } catch(e) { detailArr = []; }
+         }
+
+         if (detailArr && Array.isArray(detailArr) && detailArr.length > 0) {
+            cartData = detailArr.filter(item => item.invId !== '_INVOICE_FLAG_');
+            isInvoice = detailArr.some(item => item.invId === '_INVOICE_FLAG_');
          }
 
          setFormData({
@@ -603,8 +614,14 @@
          let itemsHtml = '';
          let validCart = [];
          
-         if (t.detailKeranjang && Array.isArray(t.detailKeranjang)) {
-             validCart = t.detailKeranjang.filter(i => i.invId !== '_INVOICE_FLAG_');
+         // ZETTBOT FIX: Parsing String JSON ke Object Array (Mencegah TypeError)
+         let detailArr = t.detailKeranjang;
+         if (typeof detailArr === 'string') {
+            try { detailArr = JSON.parse(detailArr); } catch(e) { detailArr = []; }
+         }
+
+         if (detailArr && Array.isArray(detailArr)) {
+             validCart = detailArr.filter(i => i.invId !== '_INVOICE_FLAG_');
          }
 
          if (validCart.length > 0) {
@@ -1587,7 +1604,12 @@
 
                         <div className="divide-y divide-slate-50/50 md:divide-slate-50">
                             {(filteredTransactions || []).length > 0 ? (filteredTransactions || []).map(t => {
-                              const isInvoice = t.detailKeranjang && t.detailKeranjang.some(item => item.invId === '_INVOICE_FLAG_');
+                              // ZETTBOT FIX: Parsing Array di UI Map untuk mencegah .some is not a function saat merender tombol cetak
+                              let detailArr = t.detailKeranjang;
+                              if (typeof detailArr === 'string') {
+                                 try { detailArr = JSON.parse(detailArr); t.detailKeranjang = detailArr; } catch(e) { detailArr = []; }
+                              }
+                              const isInvoice = detailArr && Array.isArray(detailArr) && detailArr.some(item => item.invId === '_INVOICE_FLAG_');
 
                               return (
                               <div key={t.id} className="flex flex-col md:grid md:grid-cols-12 hover:bg-slate-50 transition-colors group p-4 md:p-5 gap-3 md:gap-4 relative bg-white border-b border-slate-100 md:border-b-0 last:border-0 rounded-2xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none">
