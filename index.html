@@ -22,27 +22,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'" />
 
   <!-- PWA Manifest & Ikon -->
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#F7F8FA">
-  <link rel="icon" href="./icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="./icon-192.png">
-
-  <style>
-    body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
-    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    #splash-screen { position: fixed; inset: 0; background: #F7F8FA; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s ease; }
-    .spinner { width: 40px; height: 40px; border: 4px solid #E2E8F0; border-top-color: #4A7B2A; border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-
-</head>
-<body class="bg-[#F7F8FA] overflow-hidden">
-  
+<!-- ... existing code ... -->
   <div id="splash-screen">
      <div class="spinner"></div>
      <p style="margin-top:20px; font-weight:800; color:#94A3B8; letter-spacing:2px; font-size:12px;">AGRIFI WORKSPACE</p>
@@ -50,8 +30,8 @@
 
   <div id="root"></div>
 
-  <!-- ZETTBOT FIX: Menambahkan data-type dan Pragma untuk memaksa Babel mem-parsing ini sebagai Script Biasa (Classic Runtime) -->
-  <script type="text/babel" data-presets="react,env" data-type="text/javascript">
+  <!-- ZETTBOT FIX: Menghapus preset 'env' dan data-type yang memicu error Module di GitHub Pages -->
+  <script type="text/babel" data-presets="react">
     /** @jsx React.createElement */
     /** @jsxFrag React.Fragment */
     
