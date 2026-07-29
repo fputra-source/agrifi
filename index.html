@@ -22,7 +22,35 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'" />
 
   <!-- PWA Manifest & Ikon -->
-<!-- ... existing code ... -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#4A7B2A">
+  <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=Agrifi&background=4A7B2A&color=fff&size=192">
+
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    
+    /* Splash Screen */
+    #splash-screen {
+        position: fixed; inset: 0; background-color: #F7F8FA; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        transition: opacity 0.3s ease;
+    }
+    .spinner {
+        width: 40px; height: 40px; border: 4px solid #e2e8f0;
+        border-top-color: #4A7B2A; border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+
   <div id="splash-screen">
      <div class="spinner"></div>
      <p style="margin-top:20px; font-weight:800; color:#94A3B8; letter-spacing:2px; font-size:12px;">AGRIFI WORKSPACE</p>
@@ -31,7 +59,7 @@
   <div id="root"></div>
 
   <!-- ZETTBOT FIX: Menghapus preset 'env' dan data-type yang memicu error Module di GitHub Pages -->
-  <script type="text/babel" data-presets="react">
+  <script type="text/babel" data-presets="react" data-type="text/javascript">
     /** @jsx React.createElement */
     /** @jsxFrag React.Fragment */
     
@@ -138,14 +166,37 @@
       const [accModal, setAccModal] = useState({ isOpen: false, mode: 'add', oldName: '', newName: '' });
       const [catModal, setCatModal] = useState({ isOpen: false, mode: 'add', type: 'expense', oldName: '', newName: '' });
 
-      // Efek Splash Screen
+      // STATE BARU: Untuk menyimpan event PWA Install Prompt
+      const [installPrompt, setInstallPrompt] = useState(null);
+
+      // Efek PWA & Splash Screen
       useEffect(() => {
+         // Deteksi event install dari browser
+         const handleBeforeInstallPrompt = (e) => {
+           e.preventDefault(); // Cegah pop-up default
+           setInstallPrompt(e); // Simpan event ke state
+         };
+         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
          const splash = document.getElementById('splash-screen');
          if(splash) {
             splash.style.opacity = '0';
             setTimeout(() => splash.remove(), 300);
          }
+         
+         return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       }, []);
+      
+      // FUNGSI BARU: Memicu instalasi WebAPK secara manual
+      const handleInstallApp = async () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        if (outcome === 'accepted') {
+           setInstallPrompt(null);
+           alert("Aplikasi sedang diinstal ke perangkat Anda!");
+        }
+      };
 
       const setupDefaults = (res) => {
          if (res.categories && res.accountList && res.ghList) {
@@ -1210,6 +1261,13 @@
                 <button type="submit" disabled={loading} className="w-full bg-[#4A7B2A] hover:bg-[#3b6322] text-white py-4 mt-2 rounded-[20px] font-bold shadow-md shadow-[#4A7B2A]/20 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50">
                   {loading ? <Icon name="spinner" className="fa-spin" size={18} /> : <span className="uppercase tracking-widest text-sm">Masuk Sistem</span>}
                 </button>
+                
+                {/* ZETTBOT: Tombol Install PWA di Halaman Login */}
+                {installPrompt && (
+                  <button onClick={handleInstallApp} type="button" className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 py-3 rounded-[20px] font-black shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-indigo-200">
+                    <Icon name="download" size={16} /> <span className="uppercase tracking-widest text-xs">Install ke Layar Utama</span>
+                  </button>
+                )}
               </form>
               <p className="text-center text-[10px] text-[#CBD5E1] mt-10 font-bold uppercase tracking-widest">© 2026 AGRIFI SMART AGRICULTURE</p>
             </div>
@@ -1269,6 +1327,14 @@
               <div className="flex items-center gap-4">
                 {isSyncing && <Icon name="rotate" className="fa-spin text-[#4A7B2A]" size={18} title="Menyinkronkan di background..." />}
                 
+                {/* ZETTBOT: Tombol Install PWA di Header (Jika user sudah login tapi belum install) */}
+                {installPrompt && (
+                  <button onClick={handleInstallApp} className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 border border-indigo-200" title="Install Aplikasi">
+                    <Icon name="download" size={14}/>
+                    <span className="hidden md:inline">INSTALL APP</span>
+                  </button>
+                )}
+
                 <button onClick={handleForceSync} disabled={isSyncing} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 disabled:opacity-50" title="Tarik data terbaru langsung dari Spreadsheet">
                   <Icon name="rotate" className={isSyncing ? "fa-spin" : ""} size={14}/>
                   <span className="hidden md:inline">{isSyncing ? 'SINKRONISASI...' : 'SINKRON DATA'}</span>
